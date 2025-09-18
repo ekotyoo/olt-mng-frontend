@@ -10,30 +10,82 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Home, Inbox } from "lucide-react";
+import { FileStack, Home, List, LogOut, NotebookPen, Settings, User } from "lucide-react";
 
-const items = [
+const menus = [
   {
-    title: "Home",
+    groupName: "Optical Line Terminal (OLT)",
+    items: [
+      {
+        title: "OLT List",
+        url: "olt",
+        icon: List,
+      },
+    ],
+  },
+
+  {
+    groupName: "Optical Network Unit (ONU)",
+    items: [
+      {
+        title: "ONU List",
+        url: "onu",
+        icon: List,
+      },
+      {
+        title: "ONU Configuration",
+        url: "onu-configuration",
+        icon: Settings,
+      },
+    ],
+  },
+];
+
+const footerItems = [
+  {
+    title: "Profile",
     url: "#",
-    icon: Home,
+    icon: User,
   },
   {
-    title: "Inbox",
+    title: "Logout",
     url: "#",
-    icon: Inbox,
+    icon: LogOut,
   },
 ];
 
 export function AppSidebar() {
   return (
     <Sidebar>
+      <SidebarHeader>
+        <h1>Management OLT</h1>
+      </SidebarHeader>
       <SidebarContent>
+        {menus.map((menu) => (
+          <SidebarGroup key={menu.groupName}>
+            <SidebarGroupLabel>{menu.groupName}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {menu.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <a href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
+      </SidebarContent>
+      <SidebarFooter>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {footerItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url}>
@@ -46,7 +98,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-      </SidebarContent>
+      </SidebarFooter>
     </Sidebar>
   );
 }

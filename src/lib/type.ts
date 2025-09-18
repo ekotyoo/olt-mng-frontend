@@ -22,3 +22,22 @@ type OnuConfig = {
   profile?: string;
   cvlanProfile?: string;
 };
+
+type PonPortOverview = {
+  port_id: string;
+  onu_registered: number;
+  onu_online: number;
+  onu_offline: number;
+  status: string;
+}
+
+type OnuDetails = {
+  slotPort: string;
+  onuId: string;
+  vendor: string;
+  serial: string;
+  vlan?: string | null;
+  pppoeUser?: string | null;
+  pppoePass?: string | null;
+  tcontProfile?: string | null;
+};
