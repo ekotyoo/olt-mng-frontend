@@ -212,3 +212,28 @@ export function parseOnuDetails(config: string): OnuDetails[] {
     return onuList;
 }
 
+export function parseAttenuationInfo(cliOutput: string): AttenuationInfo {
+    const lines = cliOutput.split("\n").map(l => l.trim()).filter(Boolean);
+
+    const results: AttenuationInfo = [];
+
+    for (const line of lines) {
+        if (line.startsWith("up") || line.startsWith("down")) {
+            const [direction, ...rest] = line.split(/\s+/);
+
+            // Match Rx, Tx, Attenuation values
+            const rxMatch = line.match(/Rx\s*:?(-?\d+(\.\d+)?)/);
+            const txMatch = line.match(/Tx\s*:?(-?\d+(\.\d+)?)/);
+            const attMatch = line.match(/(\-?\d+\.\d+)\(dB\)/);
+
+            results.push({
+                direction: direction as "up" | "down",
+                rx: rxMatch ? parseFloat(rxMatch[1]) : NaN,
+                tx: txMatch ? parseFloat(txMatch[1]) : NaN,
+                attenuation: attMatch ? parseFloat(attMatch[1]) : NaN,
+            });
+        }
+    }
+
+    return results;
+}

@@ -41,3 +41,14 @@ type OnuDetails = {
   pppoePass?: string | null;
   tcontProfile?: string | null;
 };
+
+type AttenuationDirection = "up" | "down";
+
+interface AttenuationRow {
+  direction: AttenuationDirection; // up / down
+  rx: number;                      // in dBm
+  tx: number;                      // in dBm
+  attenuation: number;             // in dB
+}
+
+type AttenuationInfo = AttenuationRow[];

@@ -1,6 +1,6 @@
 "use server";
 
-import { parseOnuDetails, parseOnuState } from "@/lib/olt-parser";
+import { parseAttenuationInfo, parseOnuDetails, parseOnuState } from "@/lib/olt-parser";
 import { runOltCommand } from "@/lib/telnet-service";
 
 /**
@@ -20,6 +20,13 @@ export async function getAllOnuDetails(): Promise<OnuDetails[]> {
 export async function getPonPortOverview(): Promise<PonPortOverview[]> {
   const result = await runTelnetCommand("show gpon onu state");
   const data = parseOnuState(result);
+
+  return data;
+}
+
+export async function getAttenuationInfo({ slotPort, onuId }: { slotPort: string, onuId: string }) {
+  const result = await runTelnetCommand(`show pon power attenuation gpon-onu_${slotPort}:${onuId}`);
+  const data = parseAttenuationInfo(result);
 
   return data;
 }

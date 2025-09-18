@@ -9,11 +9,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, SearchCode, Trash } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import AttenuationInfoTable from "./attenuation-info-table";
 
 export const columns: ColumnDef<OnuDetails>[] = [
   {
@@ -55,8 +63,9 @@ export const columns: ColumnDef<OnuDetails>[] = [
   },
   {
     id: "actions",
+    header: "Actions",
     cell: ({ row }) => {
-      const payment = row.original;
+      const onu = row.original;
 
       return (
         <DropdownMenu>
@@ -67,8 +76,30 @@ export const columns: ColumnDef<OnuDetails>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => {}}>Delete</DropdownMenuItem>
+            <Dialog>
+              <DialogTrigger asChild>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <div className="flex gap-4 items-center">
+                    <SearchCode />
+                    <span>Attenuation</span>
+                  </div>
+                </DropdownMenuItem>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[800px]">
+                <DialogHeader>
+                  <DialogTitle>
+                    Optical Power: gpon-olt_{onu.slotPort}:{onu.onuId}
+                  </DialogTitle>
+                </DialogHeader>
+                <AttenuationInfoTable onuId={onu.onuId} slotPort={onu.slotPort} />
+              </DialogContent>
+            </Dialog>
+            <DropdownMenuItem variant="destructive" onClick={() => {}}>
+              <div className="flex gap-4 items-center">
+                <Trash />
+                <span>Delete</span>
+              </div>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       );
