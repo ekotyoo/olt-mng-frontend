@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { FileStack, Home, List, LogOut, NotebookPen, Settings, User } from "lucide-react";
+import { FileStack, Home, List, LogOut, Network, NotebookPen, Settings, User } from "lucide-react";
 
 const menus = [
   {
@@ -58,7 +58,21 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <h1>Management OLT</h1>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <a href="#">
+                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <Network className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">Buroq.net</span>
+                  <span className="truncate text-xs">OLT Management</span>
+                </div>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         {menus.map((menu) => (

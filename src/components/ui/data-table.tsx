@@ -21,13 +21,10 @@ import { Button } from "./button";
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  title?: string;
 }
 
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-  title,
-}: DataTableProps<TData, TValue> & { title?: string }) {
+export function DataTable<TData, TValue>({ columns, data, title }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
     columns,
@@ -36,43 +33,43 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <div>
+    <div className="flex flex-col w-full">
+      {/* Table Title */}
       {title && (
-        <div className="mb-6">
+        <div className="mb-2">
           <h2 className="text-lg font-semibold">{title}</h2>
         </div>
       )}
 
-      <div className="overflow-hidden rounded-md border">
-        <Table className="table-fixed">
+      {/* Scrollable table container */}
+      <div className="overflow-x-auto w-full min-w-0 border rounded-md">
+        <Table className="w-full min-w-[500px]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead
-                      key={header.id}
-                      className="truncate px-2 py-1 text-center"
-                      style={{ width: header.column.columnDef.meta?.width || "100px" }}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className="truncate px-2 py-1 text-center"
+                    style={{ width: header.column.columnDef.meta?.width }}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
                       className="truncate px-2 py-1 text-center"
-                      style={{ width: cell.column.columnDef.meta?.width || "100px" }}
+                      style={{ width: cell.column.columnDef.meta?.width }}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
@@ -89,6 +86,8 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination */}
       <div className="flex items-center justify-end space-x-2 py-4">
         <Button
           variant="outline"

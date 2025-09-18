@@ -5,9 +5,13 @@ import PonPortOverviewTable from "@/components/pon-port-overview-table";
 
 export default function OnuList() {
   return (
-    <div className="flex flex-col m-2 gap-4 w-full">
-      <PonPortOverviewTable />
-      <OnuListTable />
+    <div className="grid md:grid-cols-3 gap-4">
+      <div className="md:col-span-1 min-w-0 overflow-x-auto">
+        <PonPortOverviewTable />
+      </div>
+      <div className="md:col-span-2 min-w-0 overflow-x-auto">
+        <OnuListTable />
+      </div>
     </div>
   );
 }

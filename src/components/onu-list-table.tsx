@@ -22,6 +22,7 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import AttenuationInfoTable from "./attenuation-info-table";
+import { Skeleton } from "./ui/skeleton";
 
 export const columns: ColumnDef<OnuDetails>[] = [
   {
@@ -127,10 +128,10 @@ export default function OnuListTable() {
     }
   }
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <Skeleton className="h-[500px] w-full rounded-lg" />;
 
   return (
-    <Card className="w-full">
+    <Card>
       <CardContent>
         <DataTable columns={columns} data={onuDetails} title="Configured ONUs" />
       </CardContent>

@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/ui/app-sidebar";
+import { Separator } from "@/components/ui/separator";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,10 +33,14 @@ export default function RootLayout({
       >
         <SidebarProvider>
           <AppSidebar />
-          <main className="p-4 w-full">
-            <SidebarTrigger />
-            {children}
-          </main>
+          <SidebarInset>
+            <div className="h-16 flex items-center gap-2 px-4">
+              <SidebarTrigger />
+              <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+            </div>
+            <Separator />
+            <main className="p-4 w-full">{children}</main>
+          </SidebarInset>
         </SidebarProvider>
         <Toaster />
       </body>

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "./ui/table";
 import { getAttenuationInfo } from "@/app/actions/telnet";
+import { Skeleton } from "./ui/skeleton";
+import { LoaderCircle } from "lucide-react";
 
 function getStatusColor(value: number | null) {
   if (value === null || value < -1000) return "bg-red-500";
@@ -48,7 +50,12 @@ export default function AttenuationInfoTable({
     }
   }
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading)
+    return (
+      <div className="flex h-[100px] items-center justify-center">
+        <LoaderCircle className="size-10 text-blue-500 animate-spin" />
+      </div>
+    );
 
   return (
     <div className="overflow-hidden rounded-md border">

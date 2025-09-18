@@ -6,6 +6,7 @@ import { Card, CardContent } from "./ui/card";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "./ui/data-table";
 import { toTitleCase } from "@/lib/utils";
+import { Skeleton } from "./ui/skeleton";
 
 export const columns: ColumnDef<PonPortOverview>[] = [
   {
@@ -58,10 +59,10 @@ export default function PonPortOverviewTable() {
     }
   }
 
-  if (tableLoading) return <div>Loading...</div>;
+  if (tableLoading) return <Skeleton className="h-[300px] w-full rounded-lg" />;
 
   return (
-    <Card className="w-[600px]">
+    <Card>
       <CardContent>
         <DataTable columns={columns} data={ponPortOverviews} title="PON PORT Overview" />
       </CardContent>
