@@ -1,7 +1,7 @@
 "use client";
 
-import OnuConfigForm from "@/components/onu-config-form";
-import SearchOnu from "@/components/search-onu";
+import OnuConfigForm from "./components/onu-config-form";
+import SearchOnu from "./components/search-onu";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -18,7 +18,7 @@ export default function OnuConfiguration() {
 
   useEffect(() => {
     if (!selectedOlt) return;
-    getUncfgOnu(selectedOlt);
+    // getUncfgOnu(selectedOlt);
   }, [selectedOlt]);
 
   async function getUncfgOnu(oltKey: string) {

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { getAllOnuDetails } from "@/app/actions/telnet";
-import { Card, CardContent } from "./ui/card";
-import { DataTable } from "./ui/data-table";
+import { Card, CardContent } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,15 +20,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "./ui/dialog";
+} from "../../../components/ui/dialog";
 import AttenuationInfoTable from "./attenuation-info-table";
-import { Skeleton } from "./ui/skeleton";
+import { Skeleton } from "../../../components/ui/skeleton";
+import { Badge } from "../../../components/ui/badge";
 
 export const columns: ColumnDef<OnuDetails>[] = [
   {
     accessorKey: "slotPort",
     header: "Slot Port",
     meta: { width: "80px" },
+    cell: ({ row }) => {
+      return <span className="font-bold">{row.original.slotPort}</span>;
+    },
   },
   {
     accessorKey: "onuId",
@@ -43,6 +47,9 @@ export const columns: ColumnDef<OnuDetails>[] = [
   {
     accessorKey: "serial",
     header: "Serial Number",
+    cell: ({ row }) => {
+      return <Badge variant={"secondary"}>{row.original.serial}</Badge>;
+    },
   },
   {
     accessorKey: "vlan",

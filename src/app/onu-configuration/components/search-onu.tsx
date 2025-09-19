@@ -6,7 +6,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -14,11 +14,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "./ui/table";
+} from "@/components/ui/table";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function SearchOnu({
   onOnuClick = () => {},
@@ -81,9 +80,7 @@ export default function SearchOnu({
               {Array.isArray(onus) && onus.length > 0 ? (
                 onus.map((onu) => (
                   <TableRow key={onu.serial}>
-                    <TableCell className="font-medium">
-                      {onu.slot_port}
-                    </TableCell>
+                    <TableCell className="font-medium">{onu.slot_port}</TableCell>
                     <TableCell>{onu.serial}</TableCell>
                     <TableCell align="center">
                       <Button
@@ -95,11 +92,7 @@ export default function SearchOnu({
                         }}
                       >
                         <CheckCircle2
-                          className={
-                            selectedOnu === onu
-                              ? "text-background"
-                              : "text-foreground"
-                          }
+                          className={selectedOnu === onu ? "text-background" : "text-foreground"}
                         />
                       </Button>
                     </TableCell>

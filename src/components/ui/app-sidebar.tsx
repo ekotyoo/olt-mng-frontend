@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { FileStack, Home, List, LogOut, Network, NotebookPen, Settings, User } from "lucide-react";
+import { Computer, LogOut, Network, Plug, User } from "lucide-react";
 
 const menus = [
   {
@@ -19,7 +19,7 @@ const menus = [
       {
         title: "OLT List",
         url: "olt",
-        icon: List,
+        icon: Computer,
       },
     ],
   },
@@ -30,12 +30,12 @@ const menus = [
       {
         title: "ONU List",
         url: "onu",
-        icon: List,
+        icon: Network,
       },
       {
         title: "ONU Configuration",
         url: "onu-configuration",
-        icon: Settings,
+        icon: Plug,
       },
     ],
   },
@@ -61,7 +61,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+              <a href="/">
                 <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                   <Network className="size-4" />
                 </div>

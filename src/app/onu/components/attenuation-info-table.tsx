@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "./ui/table";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
 import { getAttenuationInfo } from "@/app/actions/telnet";
-import { Skeleton } from "./ui/skeleton";
 import { LoaderCircle } from "lucide-react";
 
 function getStatusColor(value: number | null) {
@@ -17,9 +23,9 @@ function getStatusColor(value: number | null) {
 
 function ValueWithCircle({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center justify-center gap-2">
+    <div className="flex items-center gap-2">
       <div className={`inline-block h-3 w-3 rounded-full ${getStatusColor(value)}`} />
-      {label}: {value}(dBm)
+      {label}: {value} (dBm)
     </div>
   );
 }
@@ -63,9 +69,9 @@ export default function AttenuationInfoTable({
         <TableHeader>
           <TableRow>
             <TableHead className="truncate px-2 py-1">Direction</TableHead>
-            <TableHead className="truncate px-2 py-1 text-center">OLT</TableHead>
-            <TableHead className="truncate px-2 py-1 text-center">ONU</TableHead>
-            <TableHead className="truncate px-2 py-1 text-center">Attenuation</TableHead>
+            <TableHead className="truncate px-2 py-1">OLT</TableHead>
+            <TableHead className="truncate px-2 py-1">ONU</TableHead>
+            <TableHead className="truncate px-2 py-1">Attenuation</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -75,7 +81,7 @@ export default function AttenuationInfoTable({
               <TableCell>{row.direction}</TableCell>
 
               {/* OLT column */}
-              <TableCell className="text-center">
+              <TableCell>
                 {row.direction === "up" ? (
                   <ValueWithCircle label="Rx" value={row.rx} />
                 ) : (
@@ -84,7 +90,7 @@ export default function AttenuationInfoTable({
               </TableCell>
 
               {/* ONU column */}
-              <TableCell className="text-center">
+              <TableCell>
                 {row.direction === "up" ? (
                   <ValueWithCircle label="Tx" value={row.tx} />
                 ) : (
@@ -93,11 +99,11 @@ export default function AttenuationInfoTable({
               </TableCell>
 
               {/* Attenuation */}
-              <TableCell className="text-center flex items-center justify-center gap-2">
+              <TableCell className=" flex items-center gap-2">
                 <div
                   className={`inline-block h-3 w-3 rounded-full ${getStatusColor(row.attenuation)}`}
                 />
-                {row.attenuation}(dB)
+                {row.attenuation} (dB)
               </TableCell>
             </TableRow>
           ))}

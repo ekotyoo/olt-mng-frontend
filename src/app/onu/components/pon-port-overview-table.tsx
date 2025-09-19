@@ -2,17 +2,28 @@
 
 import { getPonPortOverview } from "@/app/actions/telnet";
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "./ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "./ui/data-table";
+import { DataTable } from "@/components/ui/data-table";
 import { toTitleCase } from "@/lib/utils";
-import { Skeleton } from "./ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
+
+function getStatusColor(value: string | null) {
+  if (value === null || value === "down") return "bg-red-500";
+  if (value === "partial") return "bg-yellow-500";
+  if (value === "healthy") return "bg-green-500";
+
+  return "bg-gray-400";
+}
 
 export const columns: ColumnDef<PonPortOverview>[] = [
   {
     accessorKey: "port_id",
     header: "Slot Port",
     meta: { width: "80px" },
+    cell: ({ row }) => {
+      return <span className="font-bold">{row.original.port_id}</span>;
+    },
   },
   {
     accessorKey: "onu_registered",
@@ -32,7 +43,12 @@ export const columns: ColumnDef<PonPortOverview>[] = [
     header: "Status",
     cell: ({ getValue }) => {
       const val = getValue() as string;
-      return <span>{toTitleCase(val)}</span>;
+      return (
+        <div className="flex items-center gap-2">
+          <div className={`inline-block h-3 w-3 rounded-full ${getStatusColor(val)}`} />
+          {toTitleCase(val)}
+        </div>
+      );
     },
     meta: { width: "60px" },
   },

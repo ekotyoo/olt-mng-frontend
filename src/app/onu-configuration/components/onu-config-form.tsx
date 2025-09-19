@@ -3,17 +3,17 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "./ui/form";
-import { Input } from "./ui/input";
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "@/components/ui/select";
 import { LoaderCircle } from "lucide-react";
 import { useEffect } from "react";
 import { formSchema } from "@/lib/schema";
@@ -29,16 +29,7 @@ export default function OnuConfigForm({
   onuDetail?: OnuDetail | null;
   onSubmit?: (onuConfig: OnuConfig) => void | null;
 }) {
-  const PROFILES = [
-    "default",
-    "iptv-up",
-    "5M",
-    "10M",
-    "15M",
-    "20M",
-    "50M",
-    "100M",
-  ];
+  const PROFILES = ["default", "iptv-up", "5M", "10M", "15M", "20M", "50M", "100M"];
 
   const CVLAN_PROFILES = ["netmedia143"];
 
@@ -186,10 +177,7 @@ export default function OnuConfigForm({
                   <FormItem>
                     <FormLabel>Profile</FormLabel>
                     <FormControl>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select Profile" />
                         </SelectTrigger>
@@ -212,10 +200,7 @@ export default function OnuConfigForm({
                   <FormItem>
                     <FormLabel>VLAN Profile</FormLabel>
                     <FormControl>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select CVLAN Profile" />
                         </SelectTrigger>
