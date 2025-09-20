@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Computer, LogOut, Network, Plug, User } from "lucide-react";
+import { Cat, CatIcon, Computer, LogOut, Network, Plug, User } from "lucide-react";
 
 const menus = [
   {
@@ -62,8 +62,8 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <a href="/">
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <Network className="size-4" />
+                <div className="bg-sidebar-foreground text-sidebar-primary flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <Cat className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">Buroq.net</span>

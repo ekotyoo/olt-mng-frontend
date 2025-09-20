@@ -1,5 +1,6 @@
 "use client";
 
+import { Onu, OnuConfig, OnuDetail } from "@/lib/type";
 import OnuConfigForm from "./components/onu-config-form";
 import SearchOnu from "./components/search-onu";
 import { useEffect, useState } from "react";

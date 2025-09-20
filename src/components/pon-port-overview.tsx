@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 export default function PonPortOverview() {
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>PON Port</CardTitle>
       </CardHeader>

@@ -1,16 +1,16 @@
-type Onu = {
+export type Onu = {
   slot_port: string;
   serial: string;
 };
 
-type OnuDetail = {
+export type OnuDetail = {
   onu_id: string;
   slot_port: string;
   serial: string;
   status: string;
 };
 
-type OnuConfig = {
+export type OnuConfig = {
   olt?: string;
   slotPort?: string;
   onuId?: string;
@@ -23,7 +23,7 @@ type OnuConfig = {
   cvlanProfile?: string;
 };
 
-type PonPortOverview = {
+export type PonPortOverview = {
   port_id: string;
   onu_registered: number;
   onu_online: number;
@@ -31,7 +31,7 @@ type PonPortOverview = {
   status: string;
 }
 
-type OnuDetails = {
+export type OnuDetails = {
   slotPort: string;
   onuId: string;
   vendor: string;
@@ -42,13 +42,47 @@ type OnuDetails = {
   tcontProfile?: string | null;
 };
 
-type AttenuationDirection = "up" | "down";
+export type AttenuationDirection = "up" | "down";
 
-interface AttenuationRow {
+export interface AttenuationRow {
   direction: AttenuationDirection; // up / down
   rx: number;                      // in dBm
   tx: number;                      // in dBm
   attenuation: number;             // in dB
 }
 
-type AttenuationInfo = AttenuationRow[];
+export type AttenuationInfo = AttenuationRow[];
+
+export type OltInfo = {
+  upTime: string;
+  contact: string;
+  systemName: string;
+  location: string;
+}
+
+export type OltCard = {
+  rack: string;
+  shelf: string;
+  slot: string;
+  ports: string;
+  hardwareVersion: string;
+  softwareVersion: string;
+  status: string;
+}
+
+export type OltCardDetail = {
+  rack: string;
+  shelf: string;
+  slot: string;
+  configType: string;
+  status: string;
+  ports: number;
+  serialNumber: string;
+  phyMemorySize: number;
+  hardwareVersion: string;
+  softwareVersion: string;
+  cpuUsage: number;
+  memoryUsage: number;
+  upTime: string;
+  lastRestartReason: string;
+}

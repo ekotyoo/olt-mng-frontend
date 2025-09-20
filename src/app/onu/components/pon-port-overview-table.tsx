@@ -7,6 +7,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { toTitleCase } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PonPortOverview } from "@/lib/type";
 
 function getStatusColor(value: string | null) {
   if (value === null || value === "down") return "bg-red-500";

@@ -1,3 +1,5 @@
+import { AttenuationInfo, OltCard, OltCardDetail, OltInfo, OnuDetails, PonPortOverview } from "./type";
+
 /**
  * Remove header/footer lines from raw CLI output
  */
@@ -237,3 +239,151 @@ export function parseAttenuationInfo(cliOutput: string): AttenuationInfo {
 
     return results;
 }
+
+export function parseSystemGroup(raw: string): OltInfo {
+    const clean = (val: string) =>
+        val.replace(/\r/g, "").replace(/\x00/g, "").trim();
+
+    const result: any = {};
+    const lines = raw.split("\n");
+
+    for (const line of lines) {
+        if (line.includes(":")) {
+            const [key, ...rest] = line.split(":");
+            const value = clean(rest.join(":"));
+
+            switch (key.trim()) {
+                case "Started before":
+                    result.upTime = value;
+                    break;
+                case "Contact with":
+                    result.contact = value;
+                    break;
+                case "System name":
+                    result.systemName = value;
+                    break;
+                case "Location":
+                    result.location = value;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (line.startsWith("This system primarily offers")) {
+            const num = line.match(/\d+/);
+            result.ServicesOffered = num ? parseInt(num[0]) : null;
+        }
+    }
+
+    console.log(result);
+
+    return {
+        upTime: result.upTime || "-",
+        contact: result.contact || "-",
+        systemName: result.systemName || "-",
+        location: result.location || "-",
+    };
+}
+
+export function parseOltCard(raw: string): OltCard[] {
+    const cards: OltCard[] = [];
+
+    raw.split("\n").forEach(line => {
+        const parts = line.trim().split(/\s+/);
+
+        if (parts.length >= 6 && /^\d+$/.test(parts[0])) {
+            cards.push({
+                rack: parts[0],
+                shelf: parts[1],
+                slot: parts[2],
+                ports: parts[5],
+                hardwareVersion: parts.length > 6 ? parts[6] : "",
+                softwareVersion: parts.length > 7 ? parts[7] : "",
+                status: parts[parts.length - 1], // always take last column as status
+            });
+        }
+    });
+
+    return cards;
+}
+
+function extractPairs(line: string): [string, string][] {
+    const regex = /([A-Za-z\-\s]+):\s*([^:]+?)(?=\s{2,}[A-Za-z\-\s]+:|$)/g;
+    const pairs: [string, string][] = [];
+    let match;
+    while ((match = regex.exec(line)) !== null) {
+        pairs.push([match[1].trim(), match[2].trim()]);
+    }
+    return pairs;
+}
+
+function shortenUptime(raw: string): string {
+    const regex = /(\d+)\s*Days?,?\s*(\d+)\s*Hours?,?\s*(\d+)\s*Minutes?,?\s*(\d+)\s*Seconds?/i;
+    const match = raw.match(regex);
+
+    if (!match) return raw; // fallback if parsing fails
+
+    const days = parseInt(match[1], 10);
+    const hours = parseInt(match[2], 10);
+    const minutes = parseInt(match[3], 10);
+
+    // choose your format:
+    if (days > 0) return `${days}d ${hours}h`; // e.g. "103d 3h"
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+}
+
+export function parseOltCardDetail(
+    raw: string,
+    rack: string,
+    shelf: string,
+    slot: string
+): OltCardDetail {
+    const version = (v: string) => v.match(/V\d+\.\d+\.\d+/)?.[0] ?? "";
+    const parseMemory = (v: string) => {
+        const m = v.match(/(\d+)(MB|GB)/i);
+        if (!m) return 0;
+        const num = parseInt(m[1], 10);
+        return m[2].toUpperCase() === "GB" ? num * 1024 : num;
+    };
+    const parsePercent = (v: string) => parseInt(v.replace("%", "").trim(), 10) || 0;
+
+    const result: OltCardDetail = {
+        rack, shelf, slot,
+        configType: "-",
+        status: "-",
+        ports: 0,
+        serialNumber: "-",
+        phyMemorySize: 0,
+        hardwareVersion: "-",
+        softwareVersion: "-",
+        cpuUsage: 0,
+        memoryUsage: 0,
+        upTime: "-",
+        lastRestartReason: "-"
+    };
+
+    raw.split("\n").forEach(line => {
+        extractPairs(line).forEach(([key, value]) => {
+            switch (key) {
+                case "Config-Type": result.configType = value; break;
+                case "Status": result.status = value; break;
+                case "Port-Number": result.ports = parseInt(value, 10) || 0; break;
+                case "Serial-Number": result.serialNumber = value; break;
+                case "Phy-Mem-Size": result.phyMemorySize = parseMemory(value); break;
+                case "Hardware-VER": result.hardwareVersion = version(value); break;
+                case "Software-VER": result.softwareVersion = version(value); break;
+                case "Cpu-Usage": result.cpuUsage = parsePercent(value); break;
+                case "Mem-Usage": result.memoryUsage = parsePercent(value); break;
+                case "Uptime": result.upTime = shortenUptime(value); break;
+                case "Last restart reason": result.lastRestartReason = value; break;
+            }
+        });
+    });
+
+    return result;
+}
+
+
+

@@ -3,7 +3,7 @@ import { Separator } from "./ui/separator";
 
 export default function PonPortStatsCard() {
   return (
-    <Card className="w-[200px] inline-block">
+    <Card className="min-w-[200px]">
       <CardContent>
         <div className="flex flex-col items-center justify-between">
           <h2 className="font-semibold mb-2">PON Port 1/1/1</h2>

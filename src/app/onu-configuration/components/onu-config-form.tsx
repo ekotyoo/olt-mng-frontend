@@ -17,6 +17,7 @@ import {
 import { LoaderCircle } from "lucide-react";
 import { useEffect } from "react";
 import { formSchema } from "@/lib/schema";
+import { OnuConfig, OnuDetail } from "@/lib/type";
 
 export default function OnuConfigForm({
   isLoading = false,

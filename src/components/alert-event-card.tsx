@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
-export default function AlertEventCard({ className }: { className?: string }) {
+export default function AlertEventCard() {
   return (
-    <Card className={`w-full ${className ?? ""}`}>
+    <Card>
       <CardHeader>
         <CardTitle>Alerts & Events</CardTitle>
       </CardHeader>

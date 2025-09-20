@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { getAttenuationInfo } from "@/app/actions/telnet";
 import { LoaderCircle } from "lucide-react";
+import { AttenuationInfo } from "@/lib/type";
 
 function getStatusColor(value: number | null) {
   if (value === null || value < -1000) return "bg-red-500";
