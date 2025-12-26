@@ -1,5 +1,41 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Project Overview
+
+OLT management frontend built with Next.js App Router, React 19, Tailwind CSS 4, and Radix UI.
+
+### Scripts
+
+```bash
+npm run dev           # Start dev server (Turbopack)
+npm run build         # Build for production
+npm start             # Start production server
+npm run lint          # Run ESLint
+npm run format        # Format with Prettier
+npm run format:check  # Check formatting
+```
+
+### Requirements
+
+- Node 18+ (recommended 20 LTS)
+- PNPM/Yarn/NPM as preferred package manager
+
+### Conventions
+
+- Path alias `@/*` maps to `src/*`
+- Code style is enforced with ESLint and Prettier
+- Editor settings enforced via `.editorconfig`
+
+### Structure
+
+- `src/app` App Router pages and layouts
+- `src/components` shared UI components
+- `src/lib` domain logic (e.g., telnet service, parsers)
+
+### Environment
+
+Create a `.env.local` for any secrets or endpoints you need at runtime.
+
 ## Getting Started
 
 First, run the development server:

@@ -1,7 +1,7 @@
 "use server";
 
 import { parseAttenuationInfo, parseOltCard, parseOltCardDetail, parseOnuDetails, parseOnuState, parseSystemGroup } from "@/lib/olt-parser";
-import { runOltCommand } from "@/lib/telnet-service";
+import { runOltCommand, runOltSession } from "@/lib/telnet-service";
 import { OltCardDetail, OnuDetails, PonPortOverview } from "@/lib/type";
 
 export async function runTelnetCommand(command: string): Promise<string> {
@@ -37,17 +37,19 @@ export async function getOltInfo() {
 }
 
 export async function getOltCardStats() {
-  const result = await runTelnetCommand("show card");
-  const oltCards = parseOltCard(result);
+  return await runOltSession(async (session) => {
+    const result = await session.sendCommand("show card");
+    const oltCards = parseOltCard(result);
 
-  const data: OltCardDetail[] = [];
+    const data: OltCardDetail[] = [];
 
-  for (const oltCard of oltCards) {
-    const result = await runTelnetCommand(`show card rack ${oltCard.rack} shelf ${oltCard.shelf} slot ${oltCard.slot}`);
-    const oltCardDetail = parseOltCardDetail(result, oltCard.rack, oltCard.shelf, oltCard.slot);
+    for (const oltCard of oltCards) {
+      const detailRaw = await session.sendCommand(`show card rack ${oltCard.rack} shelf ${oltCard.shelf} slot ${oltCard.slot}`);
+      const detail = parseOltCardDetail(detailRaw, oltCard.rack, oltCard.shelf, oltCard.slot);
 
-    data.push(oltCardDetail);
-  }
+      data.push(detail);
+    }
 
-  return data;
+    return data;
+  })
 }

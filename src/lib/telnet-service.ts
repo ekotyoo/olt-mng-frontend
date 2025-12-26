@@ -2,8 +2,6 @@ import Telnet from "telnet-client";
 
 const { Telnet: TelnetClass } = Telnet;
 
-let sharedConnection: any | null = null;
-
 const params = {
     host: process.env.OLT_HOST,
     port: process.env.OLT_PORT ? parseInt(process.env.OLT_PORT) : 23,
@@ -20,49 +18,36 @@ const params = {
             : undefined,
 };
 
-/**
- * Ensure we have a connected Telnet session
- */
-async function getConnection() {
-    if (sharedConnection && sharedConnection._socket?.writable) {
-        return sharedConnection;
-    }
-
-    const connection = new TelnetClass();
-    await connection.connect(params);
-
-    await connection.send(params.username + "\n", { waitFor: params.loginPrompt });
-    await connection.send(params.password + "\n", { waitFor: params.passwordPrompt });
-
-    await connection.send("terminal length 0", { shellPrompt: params.shellPrompt });
-
-    sharedConnection = connection;
-    return connection;
+export type OltSession = {
+    sendCommand: (command: string) => Promise<string>;
 }
 
-/**
- * Run a command on OLT and return raw output
- */
-export async function runOltCommand(command: string): Promise<string> {
-    const conn = await getConnection();
+export async function runOltSession<T>(
+    action: (session: OltSession) => Promise<T>
+): Promise<T> {
+    const connection = new TelnetClass();
+
     try {
-        const result = await conn.send(command, { shellPrompt: params.shellPrompt });
-        console.log(result);
-        return result;
+        await connection.connect(params);
+
+        await connection.send(params.username + "\n", { waitFor: params.loginPrompt });
+        await connection.send(params.password + "\n", { waitFor: params.passwordPrompt });
+
+        await connection.send("terminal length 0", { shellPrompt: params.shellPrompt });
+
+        const sendCommand = async (command: string) => connection.send(command, { shellPrompt: params.shellPrompt });
+
+        return await action({ sendCommand });
     } catch (err) {
         console.error("OLT command error:", err);
         throw err;
     } finally {
-        await closeOltConnection();
+        await connection.end();
     }
 }
 
-/**
- * Close the connection (optional, for manual cleanup)
- */
-export async function closeOltConnection() {
-    if (sharedConnection) {
-        await sharedConnection.end();
-        sharedConnection = null;
-    }
+export async function runOltCommand(command: string): Promise<string> {
+    return runOltSession(async (session) => {
+        return session.sendCommand(command);
+    });
 }

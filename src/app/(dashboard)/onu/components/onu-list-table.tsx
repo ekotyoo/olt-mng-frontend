@@ -20,10 +20,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../../../components/ui/dialog";
+} from "@/components/ui/dialog";
 import AttenuationInfoTable from "./attenuation-info-table";
-import { Skeleton } from "../../../components/ui/skeleton";
-import { Badge } from "../../../components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { OnuDetails } from "@/lib/type";
 
 export const columns: ColumnDef<OnuDetails>[] = [
   {
@@ -102,7 +103,7 @@ export const columns: ColumnDef<OnuDetails>[] = [
                 <AttenuationInfoTable onuId={onu.onuId} slotPort={onu.slotPort} />
               </DialogContent>
             </Dialog>
-            <DropdownMenuItem variant="destructive" onClick={() => {}}>
+            <DropdownMenuItem variant="destructive" onClick={() => { }}>
               <div className="flex gap-4 items-center">
                 <Trash />
                 <span>Delete</span>

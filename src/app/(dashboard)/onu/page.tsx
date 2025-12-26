@@ -1,6 +1,6 @@
 "use client";
 
-import OnuListTable from "@/app/onu/components/onu-list-table";
+import OnuListTable from "./components/onu-list-table";
 import PonPortOverviewTable from "./components/pon-port-overview-table";
 
 export default function OnuList() {
