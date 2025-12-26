@@ -7,6 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -14,4 +15,101 @@ model User {
   name      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Olt {
+  id          String    @id @default(cuid())
+  name        String    // e.g. "Main OLT"
+  host        String    @unique
+  port        Int       @default(23)
+  username    String    @default("")
+  password    String    @default("") 
+  type        String    @default("ZTE")
+  
+  // System Stats
+  contact     String?
+  location    String?
+  upTime      String?
+  cpuUsage    Int       @default(0)
+  memoryUsage Int       @default(0)
+  temperature Int       @default(0)
+
+  ponPorts    PonPort[]
+  slots       OltSlot[]
+  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime  @default(now())
+}
+
+model OltSlot {
+  id          String    @id @default(cuid())
+  oltId       String
+  olt         Olt       @relation(fields: [oltId], references: [id])
+  
+  // Location
+  rack        Int
+  shelf       Int
+  slot        Int
+
+  // Details
+  configType  String?   // e.g. GTGH
+  status      String?   // e.g. INSERVICE
+  cpuUsage    Int       @default(0)
+  memoryUsage Int       @default(0)
+  temperature Int       @default(0)
+  
+  // Meta
+  serialNumber String?
+  upTime      String?
+  lastRestartReason String?
+
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([oltId, rack, shelf, slot])
+}
+
+model PonPort {
+  id          String    @id @default(cuid())
+  portIndex   String    // e.g. "1/1/1"
+  oltId       String
+  olt         Olt       @relation(fields: [oltId], references: [id])
+  onus        Onu[]
+  
+  // Cached Stats
+  registeredCount Int @default(0)
+  onlineCount     Int @default(0)
+
+  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime  @default(now())
+
+  @@unique([oltId, portIndex])
+}
+
+model Onu {
+  id            String    @id @default(cuid())
+  serial        String    @unique // Serial Number is the true unique ID
+  
+  // Location
+  slotPort      String    // "1/1/1"
+  onuId         Int       // 1, 2, 3... (The ID on the port)
+
+  // Foreign Key
+  ponPortId     String
+  ponPort       PonPort   @relation(fields: [ponPortId], references: [id])
+  
+  // Config/Status
+  name          String?   // Customer Name / Description
+  status        String?   // "working", "offline"
+  
+  // Technical Details
+  deviceType    String?   // "ZTE-F609"
+  vlan          String?
+  pppoeUser     String?
+  pppoePass     String?
+  tcontProfile  String?
+  
+  // Meta
+  lastSync      DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([slotPort, onuId])
 }

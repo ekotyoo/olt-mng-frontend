@@ -6,40 +6,40 @@ import { Progress } from "./ui/progress";
 import { Separator } from "./ui/separator";
 import OltInfoCard from "./olt-info-card";
 import { useEffect, useState } from "react";
-import { getOltCardStats } from "@/app/actions/telnet";
+import { getOltCardStats } from "@/app/actions/olt";
 import { OltCardDetail } from "@/lib/type";
 import { Skeleton } from "./ui/skeleton";
 import { toTitleCase } from "@/lib/utils";
 
-export default function TrafficGraphCard() {
+export default function TrafficGraphCard({ oltId }: { oltId: string }) {
   return (
     <div>
       <h2 className="text-lg font-semibold">System Info</h2>
       <div className="grid grid-cols-5 gap-4 mt-4">
         <div className="col-span-2">
-          <OltInfoCard />
+          <OltInfoCard oltId={oltId} />
         </div>
         <div className="col-span-3">
-          <OltCardInfo />
+          <OltCardInfo oltId={oltId} />
         </div>
       </div>
     </div>
   );
 }
 
-function OltCardInfo() {
+function OltCardInfo({ oltId }: { oltId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [oltCardStats, setOltCardStats] = useState<OltCardDetail[]>();
 
   useEffect(() => {
     initOltCardInfo();
-  }, []);
+  }, [oltId]);
 
   async function initOltCardInfo() {
     setIsLoading(true);
 
     try {
-      const data = await getOltCardStats();
+      const data = await getOltCardStats(oltId);
       setOltCardStats(data);
     } catch (e) {
       console.log(e);

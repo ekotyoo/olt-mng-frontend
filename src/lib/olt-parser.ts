@@ -1,4 +1,4 @@
-import { AttenuationInfo, OltCard, OltCardDetail, OltInfo, OnuDetails, PonPortOverview } from "./type";
+import { AttenuationInfo, OltCard, OltCardDetail, OltInfo, Onu, OnuDetails, PonPortOverview } from "./type";
 
 /**
  * Remove header/footer lines from raw CLI output
@@ -93,10 +93,13 @@ export function parseOnuIndices(output: string): string[] {
 }
 
 
-export function parseOnuDetail(output: string): OnuDetails {
+export function parseOnuDetail(output: string, slotPort: string, onuId: string): OnuDetails {
     const lines = output.split(/\r?\n/).map(l => l.trim());
 
     const detail: OnuDetails = {
+        slotPort,
+        onuId,
+        serial: "",
         interface: "",
         name: "",
         type: "",
@@ -122,6 +125,7 @@ export function parseOnuDetail(output: string): OnuDetails {
         }
         if (line.startsWith("Serial number:")) {
             detail.serialNumber = line.split(":")[1].trim();
+            detail.serial = detail.serialNumber;
         }
         if (line.startsWith("Description:")) {
             detail.description = line.split(":")[1].trim();
@@ -289,18 +293,25 @@ export function parseSystemGroup(raw: string): OltInfo {
 export function parseOltCard(raw: string): OltCard[] {
     const cards: OltCard[] = [];
 
-    raw.split("\n").forEach(line => {
-        const parts = line.trim().split(/\s+/);
+    // Skip header lines
+    const lines = raw.split("\n").filter(l => /^\s*\d/.test(l));
 
-        if (parts.length >= 6 && /^\d+$/.test(parts[0])) {
+    lines.forEach(line => {
+        const parts = line.trim().split(/\s+/);
+        // Typical Output:
+        // Rack Shelf Slot CfgType RealType Port HardVer SoftVer Status
+        // 1    1     1    GTGH    GTGH      16   V1.0    V1.2.3  InService
+        if (parts.length >= 8) {
             cards.push({
                 rack: parts[0],
                 shelf: parts[1],
                 slot: parts[2],
+                cfgType: parts[3],
+                realType: parts[4],
                 ports: parts[5],
-                hardwareVersion: parts.length > 6 ? parts[6] : "",
-                softwareVersion: parts.length > 7 ? parts[7] : "",
-                status: parts[parts.length - 1], // always take last column as status
+                hardwareVersion: parts[6], // Simplified logic
+                softwareVersion: parts[7],
+                status: parts[parts.length - 1],
             });
         }
     });
@@ -387,3 +398,79 @@ export function parseOltCardDetail(
 
 
 
+
+export function parseUnconfiguredOnus(output: string): Onu[] {
+    const lines = cleanOutput(output);
+    const onus: Onu[] = [];
+    const regex = /gpon-onu_(\d+\/\d+\/\d+):(\d+)\s+(\S+)/;
+
+    for (const line of lines) {
+        const match = line.match(regex);
+        if (match) {
+            onus.push({
+                slot_port: match[1],
+                serial: match[3]
+            });
+        }
+    }
+    return onus;
+}
+
+export function parseTrafficProfiles(output: string): string[] {
+    const lines = cleanOutput(output);
+    const profiles: string[] = [];
+    // Example Output:
+    // Profile-Name: 10M
+    // Profile-Name: 20M
+    // or tabular
+    // 1    10M     ...
+
+    const regex = /^\d+\s+(\S+)/; // Matches "1   10M"
+
+    for (const line of lines) {
+        if (line.includes("Profile-Name:")) {
+            profiles.push(line.split(":")[1].trim());
+        } else {
+            const match = line.match(regex);
+            if (match && !line.includes("Name")) {
+                profiles.push(match[1]);
+            }
+        }
+    }
+    return [...new Set(profiles)].filter(p => !p.toLowerCase().includes("name"));
+}
+
+export function parseVlanProfiles(output: string): string[] {
+    const lines = cleanOutput(output);
+    const profiles: string[] = [];
+    const regex = /^\d+\s+(\S+)/;
+
+    for (const line of lines) {
+        const match = line.match(regex);
+        if (match && !line.includes("Name") && !line.includes("Profile")) {
+            profiles.push(match[1]);
+        }
+    }
+    return profiles;
+}
+
+export function parseVlans(output: string): { id: string, name: string }[] {
+    const lines = cleanOutput(output);
+    const vlans: { id: string, name: string }[] = [];
+    // Typical "show vlan" output:
+    // VLAN  Name  ...
+    // 100   Inet  ...
+
+    const regex = /^(\d+)\s+(\S+)/;
+
+    for (const line of lines) {
+        const match = line.match(regex);
+        if (match) {
+            vlans.push({
+                id: match[1],
+                name: match[2]
+            });
+        }
+    }
+    return vlans;
+}

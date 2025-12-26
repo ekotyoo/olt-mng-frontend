@@ -21,30 +21,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Onu } from "@/lib/type";
 
 export default function SearchOnu({
-  onOnuClick = () => {},
-  onSelectOlt = () => {},
+  onOnuClick = () => { },
+  onSelectOlt = () => { },
   isLoading = false,
   onus = [],
   selectedOnu,
+  oltOptions = [],
 }: {
   onOnuClick?: (onu: Onu) => void;
   onSelectOlt?: (olt: string) => void;
   isLoading?: boolean;
   onus?: Onu[];
   selectedOnu?: Onu | null;
+  oltOptions?: { label: string; value: string }[];
 }) {
-  const olts = [
-    {
-      ip: "192.168.220.22",
-      name: "OLT 1",
-      olt_key: "olt1",
-    },
-    {
-      ip: "192.168.220.22",
-      name: "OLT 2",
-      olt_key: "olt2",
-    },
-  ];
 
   return (
     <Card className="w-full flex flex-col gap-4">
@@ -58,9 +48,9 @@ export default function SearchOnu({
             <SelectValue placeholder="Select OLT" />
           </SelectTrigger>
           <SelectContent>
-            {olts.map((olt) => (
-              <SelectItem key={olt.olt_key} value={olt.olt_key}>
-                {olt.name}/{olt.ip}
+            {(oltOptions || []).map((olt) => (
+              <SelectItem key={olt.value} value={olt.value}>
+                {olt.label}
               </SelectItem>
             ))}
           </SelectContent>

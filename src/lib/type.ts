@@ -34,12 +34,21 @@ export type PonPortOverview = {
 export type OnuDetails = {
   slotPort: string;
   onuId: string;
-  vendor: string;
-  serial: string;
+  vendor?: string;
+  serial: string; // Used in list table
+  serialNumber?: string; // Used in detail view
   vlan?: string | null;
   pppoeUser?: string | null;
   pppoePass?: string | null;
   tcontProfile?: string | null;
+  // Detail fields
+  interface?: string;
+  name?: string;
+  type?: string;
+  state?: string;
+  description?: string;
+  distance?: string;
+  onlineDuration?: string;
 };
 
 export type AttenuationDirection = "up" | "down";
@@ -64,6 +73,8 @@ export type OltCard = {
   rack: string;
   shelf: string;
   slot: string;
+  cfgType?: string;
+  realType?: string;
   ports: string;
   hardwareVersion: string;
   softwareVersion: string;

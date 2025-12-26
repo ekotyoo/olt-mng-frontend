@@ -4,23 +4,23 @@ import { Computer } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { Separator } from "./ui/separator";
 import { useEffect, useState } from "react";
-import { getOltInfo } from "@/app/actions/telnet";
+import { getOltInfo } from "@/app/actions/olt";
 import { OltInfo } from "@/lib/type";
 import { Skeleton } from "./ui/skeleton";
 import { Badge } from "./ui/badge";
 
-export default function OltInfoCard() {
+export default function OltInfoCard({ oltId }: { oltId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [oltInfo, setOltInfo] = useState<OltInfo>();
 
   useEffect(() => {
     initOltInfo();
-  }, []);
+  }, [oltId]);
 
   async function initOltInfo() {
     setIsLoading(true);
     try {
-      const oltInfo = await getOltInfo();
+      const oltInfo = await getOltInfo(oltId);
       setOltInfo(oltInfo);
     } catch (e) {
       console.log(e);

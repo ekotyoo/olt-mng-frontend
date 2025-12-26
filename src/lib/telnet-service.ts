@@ -1,21 +1,29 @@
+import { env } from "@/env";
 import Telnet from "telnet-client";
 
 const { Telnet: TelnetClass } = Telnet;
 
-const params = {
-    host: process.env.OLT_HOST,
-    port: process.env.OLT_PORT ? parseInt(process.env.OLT_PORT) : 23,
-    shellPrompt: /ZXAN.*#\s*$/, // flexible prompt
+
+export type OltConnectionParams = {
+    host: string;
+    port: number;
+    username: string;
+    password: string;
+};
+
+const defaultParams = {
+    host: env.OLT_HOST,
+    port: env.OLT_PORT,
+    username: env.OLT_USER,
+    password: env.OLT_PASS,
+    shellPrompt: /ZXAN.*#\s*$/,
     loginPrompt: /Username:/i,
     passwordPrompt: /Password:/i,
-    username: process.env.OLT_USER,
-    password: process.env.OLT_PASS,
     timeout: 10000,
     negotiationMandatory: false,
-    debug:
-        process.env.NODE_ENV !== "production"
-            ? (msg: string) => console.log("[TELNET DEBUG]", msg)
-            : undefined,
+    debug: env.NODE_ENV !== "production"
+        ? (msg: string) => console.log("[TELNET DEBUG]", msg)
+        : undefined,
 };
 
 export type OltSession = {
@@ -23,9 +31,17 @@ export type OltSession = {
 }
 
 export async function runOltSession<T>(
-    action: (session: OltSession) => Promise<T>
+    action: (session: OltSession) => Promise<T>,
+    connectionParams?: OltConnectionParams
 ): Promise<T> {
     const connection = new TelnetClass();
+
+    // Merge defaults with provided params
+    const params = {
+        ...defaultParams,
+        ...(connectionParams || {}),
+        // Ensure port is number if coming from env strings sometimes (zod handles conversion usually)
+    };
 
     try {
         await connection.connect(params);
@@ -46,8 +62,8 @@ export async function runOltSession<T>(
     }
 }
 
-export async function runOltCommand(command: string): Promise<string> {
+export async function runOltCommand(command: string, connectionParams?: OltConnectionParams): Promise<string> {
     return runOltSession(async (session) => {
         return session.sendCommand(command);
-    });
+    }, connectionParams);
 }

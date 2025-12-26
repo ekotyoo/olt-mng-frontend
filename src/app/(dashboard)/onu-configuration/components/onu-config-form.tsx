@@ -24,15 +24,27 @@ export default function OnuConfigForm({
   isSubmitting = false,
   onuDetail,
   onSubmit,
+  tcontProfiles,
+  vlanProfiles,
+  activeVlans
 }: {
   isLoading?: boolean;
   isSubmitting?: boolean;
   onuDetail?: OnuDetail | null;
+  tcontProfiles?: string[];
+  vlanProfiles?: string[];
+  activeVlans?: { id: string, name: string }[];
   onSubmit?: (onuConfig: OnuConfig) => void | null;
 }) {
-  const PROFILES = ["default", "iptv-up", "5M", "10M", "15M", "20M", "50M", "100M"];
+  const PROFILES = ["default", "iptv-up", "5M", "10M", "15M", "20M", "50M", "100M"]; // Fallback if empty
+  const CVLAN_PROFILES = ["netmedia143"]; // Fallback
 
-  const CVLAN_PROFILES = ["netmedia143"];
+  const availableTcont = tcontProfiles?.length ? tcontProfiles : PROFILES;
+  const availableVlanProc = vlanProfiles?.length ? vlanProfiles : CVLAN_PROFILES;
+
+  // Combine custom input + active vlans for Combobox later?
+  // For now we keep vlanId as text but maybe show a hint or simple select if we want to enforce
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -85,7 +97,7 @@ export default function OnuConfigForm({
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(handleSubmit)}
-              className={"w-full flex flex-col gap-4"}
+              className={"grid grid-cols-1 md:grid-cols-2 gap-4"}
             >
               <FormField
                 control={form.control}
@@ -118,7 +130,7 @@ export default function OnuConfigForm({
                   <FormItem>
                     <FormLabel>ONU ID</FormLabel>
                     <FormControl>
-                      <Input disabled placeholder="ONU ID" {...field} />
+                      <Input placeholder="ONU ID" {...field} />
                     </FormControl>
                   </FormItem>
                 )}
@@ -183,7 +195,7 @@ export default function OnuConfigForm({
                           <SelectValue placeholder="Select Profile" />
                         </SelectTrigger>
                         <SelectContent>
-                          {PROFILES.map((profile) => (
+                          {availableTcont.map((profile) => (
                             <SelectItem key={profile} value={profile}>
                               {profile.toUpperCase()}
                             </SelectItem>
@@ -206,7 +218,7 @@ export default function OnuConfigForm({
                           <SelectValue placeholder="Select CVLAN Profile" />
                         </SelectTrigger>
                         <SelectContent>
-                          {CVLAN_PROFILES.map((cvlan) => (
+                          {availableVlanProc.map((cvlan) => (
                             <SelectItem key={cvlan} value={cvlan}>
                               {cvlan}
                             </SelectItem>
@@ -217,7 +229,7 @@ export default function OnuConfigForm({
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isSubmitting} className="mt-2">
+              <Button type="submit" disabled={isSubmitting} className="mt-2 col-span-1 md:col-span-2">
                 {isSubmitting ? (
                   <LoaderCircle className="text-background animate-spin" />
                 ) : (

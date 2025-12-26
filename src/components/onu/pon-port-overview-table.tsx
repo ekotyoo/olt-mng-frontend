@@ -1,13 +1,16 @@
 "use client";
 
-import { getPonPortOverview } from "@/app/actions/telnet";
+import { getPonPortOverview } from "@/app/actions/onu";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { toTitleCase } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 import { PonPortOverview } from "@/lib/type";
+
+const cellValueToUrl = (val: string) => val; // Placeholder if simpler needed
 
 function getStatusColor(value: string | null) {
   if (value === null || value === "down") return "bg-red-500";
@@ -23,7 +26,12 @@ export const columns: ColumnDef<PonPortOverview>[] = [
     header: "Slot Port",
     meta: { width: "80px" },
     cell: ({ row }) => {
-      return <span className="font-bold">{row.original.port_id}</span>;
+      const portId = row.original.port_id;
+      return (
+        <Link href={`/pon-ports/${encodeURIComponent(cellValueToUrl(portId))}`} className="font-bold hover:underline">
+          {portId}
+        </Link>
+      );
     },
   },
   {

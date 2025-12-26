@@ -10,17 +10,23 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Cat, CatIcon, Computer, LogOut, Network, Plug, User } from "lucide-react";
+import { Cat, CatIcon, Computer, LogOut, Network, Plug, Settings, User } from "lucide-react";
 
 const menus = [
   {
     groupName: "Optical Line Terminal (OLT)",
     items: [
+
       {
-        title: "OLT List",
-        url: "olt",
-        icon: Computer,
+        title: "PON Ports",
+        url: "/pon-ports",
+        icon: Network,
       },
+      {
+        title: "OLT Settings",
+        url: "/settings/olts",
+        icon: Settings,
+      }
     ],
   },
 
@@ -28,13 +34,13 @@ const menus = [
     groupName: "Optical Network Unit (ONU)",
     items: [
       {
-        title: "ONU List",
-        url: "onu",
+        title: "Search ONUs",
+        url: "/onus",
         icon: Network,
       },
       {
         title: "ONU Configuration",
-        url: "onu-configuration",
+        url: "/onu-configuration",
         icon: Plug,
       },
     ],

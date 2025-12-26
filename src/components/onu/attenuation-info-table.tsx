@@ -9,7 +9,7 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { getAttenuationInfo } from "@/app/actions/telnet";
+import { getAttenuationInfo } from "@/app/actions/onu";
 import { LoaderCircle } from "lucide-react";
 import { AttenuationInfo } from "@/lib/type";
 
