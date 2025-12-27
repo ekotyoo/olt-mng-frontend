@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Cat, CatIcon, Computer, LogOut, Network, Plug, Settings, User } from "lucide-react";
+import { Cat, CatIcon, Computer, LogOut, Network, Plug, Settings, User, ScrollText } from "lucide-react";
 import { logout } from "@/app/actions/auth";
 
 const menus = [
@@ -46,6 +46,21 @@ const menus = [
       },
     ],
   },
+  {
+    groupName: "System",
+    items: [
+      {
+        title: "Users",
+        url: "/settings/users",
+        icon: User,
+      },
+      {
+        title: "System Logs",
+        url: "/logs",
+        icon: ScrollText,
+      }
+    ]
+  }
 ];
 
 const footerItems = [

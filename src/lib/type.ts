@@ -98,3 +98,11 @@ export type OltCardDetail = {
   lastRestartReason: string;
   temperature?: number;
 }
+
+export interface SystemLog {
+  id: string; // generated
+  date: string;
+  level: string;
+  message: string;
+  code: string | null;
+}

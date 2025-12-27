@@ -15,6 +15,7 @@ import Link from "next/link";
 import { deleteOlt } from "@/app/actions/olt-management";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 
 export default function OltListTable({ olts }: { olts: Olt[] }) {
     const router = useRouter();
@@ -39,7 +40,7 @@ export default function OltListTable({ olts }: { olts: Olt[] }) {
                         <TableHead>Name</TableHead>
                         <TableHead>Host</TableHead>
                         <TableHead>Port</TableHead>
-                        <TableHead>User</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead>Stats</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -50,7 +51,11 @@ export default function OltListTable({ olts }: { olts: Olt[] }) {
                             <TableCell className="font-medium">{olt.name}</TableCell>
                             <TableCell>{olt.host}</TableCell>
                             <TableCell>{olt.port}</TableCell>
-                            <TableCell>{olt.username}</TableCell>
+                            <TableCell>
+                                <Badge variant={olt.status === 'ONLINE' ? 'default' : 'destructive'} className={olt.status === 'ONLINE' ? 'bg-green-500 hover:bg-green-600' : ''}>
+                                    {olt.status}
+                                </Badge>
+                            </TableCell>
                             <TableCell className="text-sm text-gray-500">
                                 CPU: {olt.cpuUsage}% | Mem: {olt.memoryUsage}%
                             </TableCell>

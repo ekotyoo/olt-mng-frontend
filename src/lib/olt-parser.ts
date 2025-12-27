@@ -474,3 +474,55 @@ export function parseVlans(output: string): { id: string, name: string }[] {
     }
     return vlans;
 }
+
+import { SystemLog } from "./type";
+
+export function parseSystemLogs(output: string): SystemLog[] {
+    const lines = cleanOutput(output);
+    const logs: SystemLog[] = [];
+
+    // Example line:
+    // alarm code 1234 level minor occurred at 00:28:37 Mon Nov 10 2025 utc reason: GPON alarm link loss
+
+    // Heuristic Regex
+    // Look for "level <lvl> occurred at <time> <msg>"
+    // or just generally split by certain keywords if strict regex fails.
+
+    // Based on previous debug output: 
+    // "level minor occurred at 00:28:37  Mon  Nov 10  2025  utc  reason: GPON alarm link loss"
+
+    const regex = /level\s+(\w+)\s+occurred\s+at\s+(\d+:\d+:\d+\s+[A-Za-z]+\s+[A-Za-z]+\s+\d+\s+\d{4})\s+(?:utc)?\s*(.*)/i;
+    // We might also want to capture "code X" if present before level.
+    const codeRegex = /code\s+(\d+)/i;
+
+    let idCounter = 0;
+
+    for (const line of lines) {
+        const match = line.match(regex);
+        if (match) {
+            const level = match[1];
+            const dateStr = match[2]; // e.g., "00:28:37 Mon Nov 10 2025"
+            let message = match[3];
+
+            // Clean up message
+            if (message.startsWith("reason:")) message = message.substring(7).trim();
+
+            const codeMatch = line.match(codeRegex);
+            const code = codeMatch ? codeMatch[1] : null;
+
+            // Try to parse date, or keep raw string
+            // "00:28:37 Mon Nov 10 2025" might be parseable by Date.parse with some massaging
+            // Start with raw string for display
+
+            logs.push({
+                id: `log-${Date.now()}-${idCounter++}`, // temporary unique id
+                date: dateStr,
+                level: level.toUpperCase(),
+                message: message,
+                code: code
+            });
+        }
+    }
+
+    return logs.reverse(); // Newest first usually preferred
+}

@@ -65,3 +65,26 @@ export async function deleteOlt(id: string) {
         return { success: false, error: error.message };
     }
 }
+
+export async function testConnection(data: OltInput) {
+    try {
+        const { runOltSession } = await import("@/lib/telnet-service");
+
+        const start = Date.now();
+        await runOltSession(async (session) => {
+            // Just running a simple command to verify auth
+            await session.sendCommand("show card");
+        }, {
+            host: data.host,
+            port: data.port,
+            username: data.username,
+            password: data.password,
+            // Type might be optional or inferred
+        });
+
+        const latency = Date.now() - start;
+        return { success: true, latency };
+    } catch (error: any) {
+        return { success: false, error: error.message || "Connection failed" };
+    }
+}

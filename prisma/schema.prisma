@@ -13,6 +13,8 @@ model User {
   email     String   @unique
   password  String
   name      String?
+  role      String   @default("VIEWER") // "ADMIN", "VIEWER"
+  status    String   @default("ACTIVE") // "ACTIVE", "DISABLED"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -37,6 +39,7 @@ model Olt {
 
   ponPorts    PonPort[]
   slots       OltSlot[]
+  trafficStats TrafficStat[]
   updatedAt   DateTime  @updatedAt
   createdAt   DateTime  @default(now())
 }
@@ -113,4 +116,18 @@ model Onu {
   updatedAt     DateTime  @updatedAt
 
   @@unique([slotPort, onuId])
+}
+
+model TrafficStat {
+  id            String    @id @default(cuid())
+  oltId         String
+  olt           Olt       @relation(fields: [oltId], references: [id])
+  
+  interfaceName String    // "gei_1/3/1"
+  rxMbps        Float     // Mbps
+  txMbps        Float     // Mbps
+
+  timestamp     DateTime  @default(now())
+
+  @@index([oltId, timestamp])
 }

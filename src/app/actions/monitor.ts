@@ -1,6 +1,7 @@
 "use server";
 
 import { runOltCommand } from "@/lib/telnet-service";
+import { prisma } from "@/lib/db";
 
 export interface TrafficStats {
     timestamp: string; // ISO string
@@ -33,4 +34,34 @@ export async function getInterfaceTraffic(oltId: string, interfaceName: string =
         rx,
         tx
     };
+}
+
+export async function getTrafficHistory(oltId: string, range: '24h' | '7d') {
+    const now = new Date();
+    const startTime = new Date(now);
+
+    if (range === '24h') {
+        startTime.setHours(startTime.getHours() - 24);
+    } else {
+        startTime.setDate(startTime.getDate() - 7);
+    }
+
+    const stats = await prisma.trafficStat.findMany({
+        where: {
+            oltId,
+            interfaceName: "gei_1/3/1",
+            timestamp: {
+                gte: startTime
+            }
+        },
+        orderBy: {
+            timestamp: 'asc'
+        }
+    });
+
+    return stats.map(s => ({
+        timestamp: s.timestamp.toISOString(),
+        rx: s.rxMbps,
+        tx: s.txMbps
+    }));
 }
