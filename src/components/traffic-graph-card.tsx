@@ -1,130 +1,101 @@
 "use client";
 
 import { Badge } from "./ui/badge";
-import { Card, CardContent } from "./ui/card";
-import { Progress } from "./ui/progress";
-import { Separator } from "./ui/separator";
-import OltInfoCard from "./olt-info-card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { useEffect, useState } from "react";
-import { getOltCardStats } from "@/app/actions/olt";
-import { OltCardDetail } from "@/lib/type";
+import { getOltCardStats, getOltInfo } from "@/app/actions/olt";
+import { OltCardDetail, OltInfo } from "@/lib/type";
 import { Skeleton } from "./ui/skeleton";
 import { toTitleCase } from "@/lib/utils";
+import { Separator } from "./ui/separator";
+import { Clock, MapPin } from "lucide-react";
 
-export default function TrafficGraphCard({ oltId }: { oltId: string }) {
-  return (
-    <div>
-      <h2 className="text-lg font-semibold">System Info</h2>
-      <div className="grid grid-cols-5 gap-4 mt-4">
-        <div className="col-span-2">
-          <OltInfoCard oltId={oltId} />
-        </div>
-        <div className="col-span-3">
-          <OltCardInfo oltId={oltId} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function OltCardInfo({ oltId }: { oltId: string }) {
+export default function TrafficGraphCard({ oltId, hideHeader = false }: { oltId: string; hideHeader?: boolean }) {
   const [isLoading, setIsLoading] = useState(true);
   const [oltCardStats, setOltCardStats] = useState<OltCardDetail[]>();
+  const [oltInfo, setOltInfo] = useState<OltInfo>();
 
   useEffect(() => {
-    initOltCardInfo();
+    async function fetchData() {
+      setIsLoading(true);
+      try {
+        const [cards, info] = await Promise.all([
+          getOltCardStats(oltId),
+          getOltInfo(oltId)
+        ]);
+        setOltCardStats(cards);
+        setOltInfo(info);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
   }, [oltId]);
 
-  async function initOltCardInfo() {
-    setIsLoading(true);
-
-    try {
-      const data = await getOltCardStats(oltId);
-      setOltCardStats(data);
-    } catch (e) {
-      console.log(e);
-    } finally {
-      setIsLoading(false);
-    }
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-1/3" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    )
   }
 
-  if (isLoading)
-    return (
-      <div className="grid md:grid-cols-3 gap-4">
-        <Skeleton className="h-[200px] w-full rounded-lg" />
-        <Skeleton className="h-[200px] w-full rounded-lg" />
-        <Skeleton className="h-[200px] w-full rounded-lg" />
-      </div>
-    );
-
   return (
-    <div className="grid grid-cols-3 gap-4">
-      {oltCardStats?.map((oltCard) => (
-        <CardStats oltCardDetail={oltCard} />
-      ))}
-    </div>
-  );
-}
+    <div className="space-y-4">
+      {!hideHeader && <h2 className="text-lg font-semibold">System Info</h2>}
 
-function CardStats({ oltCardDetail }: { oltCardDetail: OltCardDetail }) {
-  return (
-    <Card className="min-w-[200px]">
-      <CardContent>
-        <div className="flex flex-col justify-between">
-          <div className="flex justify-between">
-            <h2 className="font-semibold">{oltCardDetail.configType}</h2>
-            <Badge
-              variant={oltCardDetail.status === "OFFLINE" ? "outline" : "default"}
-              className={oltCardDetail.status === "OFFLINE" ? "h-6" : "h-6 bg-green-500"}
-            >
-              {toTitleCase(oltCardDetail.status)}
-            </Badge>
+      {/* Meta Info Row */}
+      {oltInfo && (
+        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground px-1">
+          <div className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            <span>Uptime: <span className="font-medium text-foreground">{oltInfo.upTime || "N/A"}</span></span>
           </div>
-          <Separator className="mt-3" />
-          <div className="flex flex-col gap-2 mt-2">
-            <div className="flex justify-evenly">
-              <div className="flex flex-col items-center text-sm">
-                <span className="mb-1">Rack</span>
-                <span className="font-bold">{oltCardDetail.rack}</span>
-              </div>
-              <Separator orientation="vertical" />
-              <div className="flex flex-col items-center text-sm">
-                <span className="mb-1">Shelf</span>
-                <span className="font-bold">{oltCardDetail.shelf}</span>
-              </div>
-              <Separator orientation="vertical" />
-              <div className="flex flex-col items-center text-sm">
-                <span className="mb-1">Slot</span>
-                <span className="font-bold">{oltCardDetail.slot}</span>
-              </div>
-            </div>
-            <Separator />
-            <div className="flex justify-between text-sm">
-              <span>CPU</span>
-              <span className="font-semibold">{oltCardDetail.cpuUsage}%</span>
-            </div>
-            <Progress value={oltCardDetail.cpuUsage} />
-            <div className="flex justify-between text-sm">
-              <span>Memory</span>
-              <span className="font-semibold">{oltCardDetail.memoryUsage}%</span>
-            </div>
-            <Progress value={oltCardDetail.memoryUsage} />
-            <Separator className="mt-4" />
-            <div className="flex justify-between text-sm">
-              <span>Serial</span>
-              <Badge variant={"outline"}>{oltCardDetail.serialNumber}</Badge>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Up Time</span>
-              <span className="font-semibold">{oltCardDetail.upTime}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Last Restart</span>
-              <span className="font-semibold">{oltCardDetail.lastRestartReason}</span>
-            </div>
+          <Separator orientation="vertical" className="h-4" />
+          <div className="flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            <span>Location: <span className="font-medium text-foreground">{oltInfo.location || "N/A"}</span></span>
           </div>
+          {/*  Contact can be added if needed, but often clutter */}
         </div>
-      </CardContent>
-    </Card>
+      )}
+
+      {/* Cards Table */}
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow className="h-8">
+              <TableHead className="h-8 py-0">Slot</TableHead>
+              <TableHead className="h-8 py-0">Type</TableHead>
+              <TableHead className="h-8 py-0">Status</TableHead>
+              <TableHead className="h-8 py-0 text-right">CPU</TableHead>
+              <TableHead className="h-8 py-0 text-right">RAM</TableHead>
+              <TableHead className="h-8 py-0 text-right">Temp</TableHead>
+              <TableHead className="h-8 py-0">Serial</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {oltCardStats?.map((card) => (
+              <TableRow key={`${card.rack}-${card.shelf}-${card.slot}`} className="h-9">
+                <TableCell className="py-1 font-mono text-xs">{card.rack}/{card.shelf}/{card.slot}</TableCell>
+                <TableCell className="py-1 text-xs">{card.configType}</TableCell>
+                <TableCell className="py-1">
+                  <Badge variant={card.status === "OFFLINE" ? "outline" : "secondary"} className="text-[10px] h-4 px-1">
+                    {toTitleCase(card.status)}
+                  </Badge>
+                </TableCell>
+                <TableCell className="py-1 text-xs text-right font-mono">{card.cpuUsage}%</TableCell>
+                <TableCell className="py-1 text-xs text-right font-mono">{card.memoryUsage}%</TableCell>
+                <TableCell className="py-1 text-xs text-right font-mono">{card.temperature || 0}°C</TableCell>
+                <TableCell className="py-1 text-xs font-mono text-muted-foreground">{card.serialNumber || "-"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
 }

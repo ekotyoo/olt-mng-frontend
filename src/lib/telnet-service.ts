@@ -1,7 +1,5 @@
 import { env } from "@/env";
-import Telnet from "telnet-client";
-
-const { Telnet: TelnetClass } = Telnet;
+import { Telnet } from "telnet-client";
 
 
 export type OltConnectionParams = {
@@ -19,7 +17,7 @@ const defaultParams = {
     shellPrompt: /ZXAN.*#\s*$/,
     loginPrompt: /Username:/i,
     passwordPrompt: /Password:/i,
-    timeout: 10000,
+    timeout: 30000,
     negotiationMandatory: false,
     debug: env.NODE_ENV !== "production"
         ? (msg: string) => console.log("[TELNET DEBUG]", msg)
@@ -34,7 +32,7 @@ export async function runOltSession<T>(
     action: (session: OltSession) => Promise<T>,
     connectionParams?: OltConnectionParams
 ): Promise<T> {
-    const connection = new TelnetClass();
+    const connection = new Telnet();
 
     // Merge defaults with provided params
     const params = {

@@ -39,7 +39,7 @@ export async function getGlobalDashboardStats(): Promise<DashboardStats> {
 
         // Simulating OLT status based on recent update (e.g. within last 5 minutes)
         // In a real scenario, we might have a dedicated status field or health check
-        const isOnline = (new Date().getTime() - new Date(olt.updatedAt).getTime()) < 60 * 60 * 1000;
+        const isOnline = olt.status === "ONLINE";
 
         return {
             id: olt.id,

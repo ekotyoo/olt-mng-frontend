@@ -26,6 +26,7 @@ export default function SearchOnu({
   isLoading = false,
   onus = [],
   selectedOnu,
+  selectedOlt,
   oltOptions = [],
 }: {
   onOnuClick?: (onu: Onu) => void;
@@ -33,6 +34,7 @@ export default function SearchOnu({
   isLoading?: boolean;
   onus?: Onu[];
   selectedOnu?: Onu | null;
+  selectedOlt?: string | null;
   oltOptions?: { label: string; value: string }[];
 }) {
 
@@ -43,7 +45,7 @@ export default function SearchOnu({
       </CardHeader>
 
       <CardContent>
-        <Select onValueChange={onSelectOlt}>
+        <Select onValueChange={onSelectOlt} value={selectedOlt || undefined}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select OLT" />
           </SelectTrigger>

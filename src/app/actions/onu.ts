@@ -32,6 +32,80 @@ export async function getAllOnuDetails(): Promise<OnuDetails[]> {
     }));
 }
 
+export async function getOnus({
+    page = 1,
+    limit = 10,
+    query = "",
+    oltId,
+    status
+}: {
+    page?: number;
+    limit?: number;
+    query?: string;
+    oltId?: string;
+    status?: string;
+}) {
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+
+    // Search filter
+    if (query) {
+        where.OR = [
+            { name: { contains: query, mode: 'insensitive' } },
+            { serial: { contains: query, mode: 'insensitive' } },
+            { pppoeUser: { contains: query, mode: 'insensitive' } },
+            { slotPort: { contains: query, mode: 'insensitive' } }
+        ];
+    }
+
+    // OLT filter
+    if (oltId && oltId !== "all") {
+        where.ponPort = {
+            oltId: oltId
+        };
+    }
+
+    // Status filter
+    if (status && status !== "all") {
+        where.status = status;
+    }
+
+    const [data, total] = await Promise.all([
+        prisma.onu.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: [
+                { ponPort: { oltId: 'asc' } },
+                { slotPort: 'asc' },
+                { onuId: 'asc' }
+            ]
+        }),
+        prisma.onu.count({ where })
+    ]);
+
+    const mappedData: OnuDetails[] = data.map((o) => ({
+        slotPort: o.slotPort,
+        onuId: o.onuId.toString(),
+        serial: o.serial,
+        vendor: o.deviceType || "",
+        vlan: o.vlan,
+        pppoeUser: o.pppoeUser,
+        pppoePass: o.pppoePass,
+        tcontProfile: o.tcontProfile,
+        name: o.name || undefined,
+        status: o.status || undefined
+    }));
+
+    return {
+        data: mappedData,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit)
+    };
+}
+
 export async function getPonPortOverview(oltId?: string): Promise<PonPortOverview[]> {
     const where = oltId ? { oltId: oltId } : {};
 
@@ -183,6 +257,8 @@ export async function getAvailableProfiles(oltId?: string) {
     return result;
 }
 
+import { revalidatePath } from "next/cache";
+
 export async function deleteOnuAction(onuId: string, slotPort: string, serial: string) {
     const onu = await prisma.onu.findFirst({
         where: {
@@ -196,7 +272,7 @@ export async function deleteOnuAction(onuId: string, slotPort: string, serial: s
     const oltId = onu?.ponPort.oltId;
     const params = await getOltConnectionParams(oltId);
 
-    return await runOltSession(async (session) => {
+    const result = await runOltSession(async (session) => {
         // Command to delete:
         // interface gpon-olt_1/1/3
         // no onu 18
@@ -215,6 +291,9 @@ export async function deleteOnuAction(onuId: string, slotPort: string, serial: s
 
         return "success";
     }, params);
+
+    revalidatePath("/onus");
+    return result;
 }
 
 export async function rebootOnuAction(onuId: string, slotPort: string, serial: string) {

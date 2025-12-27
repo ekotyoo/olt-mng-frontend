@@ -25,6 +25,7 @@ model Olt {
   username    String    @default("")
   password    String    @default("") 
   type        String    @default("ZTE")
+  status      String    @default("OFFLINE") // "ONLINE" | "OFFLINE"
   
   // System Stats
   contact     String?

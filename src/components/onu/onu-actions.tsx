@@ -20,11 +20,10 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { MoreHorizontal, SearchCode, Trash, RefreshCw, Loader2 } from "lucide-react";
+import { MoreHorizontal, Trash, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteOnuAction, rebootOnuAction } from "@/app/actions/onu";
-import AttenuationInfoTable from "./attenuation-info-table";
+import SignalCheckPopover from "./signal-check-popover";
 
 interface OnuActionsProps {
     onu: OnuDetails;
@@ -41,8 +40,6 @@ export function OnuActions({ onu }: OnuActionsProps) {
             await deleteOnuAction(onu.onuId, onu.slotPort, onu.serial);
             toast.success("ONU deleted successfully");
             setOpenDelete(false);
-            // Optional: refresh page or trigger re-fetch
-            window.location.reload();
         } catch (error) {
             console.error(error);
             toast.error("Failed to delete ONU");
@@ -66,7 +63,9 @@ export function OnuActions({ onu }: OnuActionsProps) {
     }
 
     return (
-        <>
+        <div className="flex items-center gap-1">
+            <SignalCheckPopover onuId={onu.onuId} slotPort={onu.slotPort} />
+
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="h-8 w-8 p-0">
@@ -75,26 +74,11 @@ export function OnuActions({ onu }: OnuActionsProps) {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <div className="flex gap-4 items-center">
-                                    <SearchCode size={16} />
-                                    <span>Attenuation</span>
-                                </div>
-                            </DropdownMenuItem>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[800px]">
-                            <DialogHeader>
-                                <DialogTitle>
-                                    Optical Power: gpon-olt_{onu.slotPort}:{onu.onuId}
-                                </DialogTitle>
-                            </DialogHeader>
-                            <AttenuationInfoTable onuId={onu.onuId} slotPort={onu.slotPort} />
-                        </DialogContent>
-                    </Dialog>
-
-                    <DropdownMenuItem onClick={() => setOpenReboot(true)}>
+                    <DropdownMenuItem
+                        onClick={() => {
+                            setTimeout(() => setOpenReboot(true), 100);
+                        }}
+                    >
                         <div className="flex gap-4 items-center">
                             <RefreshCw size={16} />
                             <span>Reboot</span>
@@ -103,7 +87,9 @@ export function OnuActions({ onu }: OnuActionsProps) {
 
                     <DropdownMenuItem
                         variant="destructive"
-                        onClick={() => setOpenDelete(true)}
+                        onClick={() => {
+                            setTimeout(() => setOpenDelete(true), 100);
+                        }}
                     >
                         <div className="flex gap-4 items-center">
                             <Trash size={16} />
@@ -130,7 +116,7 @@ export function OnuActions({ onu }: OnuActionsProps) {
                                 handleDelete();
                             }}
                             disabled={loading}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            className="bg-destructive text-white hover:bg-destructive/90"
                         >
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Delete
@@ -162,6 +148,6 @@ export function OnuActions({ onu }: OnuActionsProps) {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </>
+        </div>
     );
 }

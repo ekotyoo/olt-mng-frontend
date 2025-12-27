@@ -1,14 +1,12 @@
 "use client";
 
-import { getPonPortOverview } from "@/app/actions/onu";
-import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { toTitleCase } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { PonPortOverview } from "@/lib/type";
+import { Progress } from "@/components/ui/progress";
 
 const cellValueToUrl = (val: string) => val; // Placeholder if simpler needed
 
@@ -36,16 +34,40 @@ export const columns: ColumnDef<PonPortOverview>[] = [
   },
   {
     accessorKey: "onu_registered",
-    header: "Registered ONU",
+    header: "Registered",
+    cell: ({ getValue }) => <div className="font-mono">{getValue() as number}</div>,
   },
   {
     accessorKey: "onu_online",
-    header: "ONU Online",
-    meta: { width: "80px" },
+    header: "Online Utilization",
+    cell: ({ row }) => {
+      const online = row.original.onu_online;
+      const total = row.original.onu_registered;
+      const percentage = total > 0 ? (online / total) * 100 : 0;
+
+      return (
+        <div className="flex flex-col gap-1.5 w-[140px]">
+          <div className="flex justify-between text-xs">
+            <span className="font-medium">{online} / {total} Online</span>
+            <span className="text-muted-foreground">{Math.round(percentage)}%</span>
+          </div>
+          <Progress value={percentage} className="h-2" />
+        </div>
+      )
+    },
+    meta: { width: "150px" },
   },
   {
     accessorKey: "onu_offline",
-    header: "ONU Offline",
+    header: "Offline",
+    cell: ({ getValue }) => {
+      const val = getValue() as number;
+      return (
+        <div className={val > 0 ? "text-red-500 font-bold" : "text-muted-foreground"}>
+          {val}
+        </div>
+      )
+    }
   },
   {
     accessorKey: "status",
@@ -63,33 +85,15 @@ export const columns: ColumnDef<PonPortOverview>[] = [
   },
 ];
 
-export default function PonPortOverviewTable() {
-  const [ponPortOverviews, setPonPortOverviews] = useState<PonPortOverview[]>([]);
-  const [tableLoading, setTableLoading] = useState(true);
+interface PonPortOverviewTableProps {
+  data: PonPortOverview[];
+}
 
-  useEffect(() => {
-    initPonPortOverview();
-  }, []);
-
-  async function initPonPortOverview() {
-    try {
-      setTableLoading(true);
-      const data = await getPonPortOverview();
-
-      setPonPortOverviews(data);
-    } catch (e) {
-      console.log(e);
-    } finally {
-      setTableLoading(false);
-    }
-  }
-
-  if (tableLoading) return <Skeleton className="h-[300px] w-full rounded-lg" />;
-
+export default function PonPortOverviewTable({ data }: PonPortOverviewTableProps) {
   return (
     <Card>
       <CardContent>
-        <DataTable columns={columns} data={ponPortOverviews} title="PON PORT Overview" />
+        <DataTable columns={columns} data={data} title="PON PORT Overview" />
       </CardContent>
     </Card>
   );

@@ -96,4 +96,5 @@ export type OltCardDetail = {
   memoryUsage: number;
   upTime: string;
   lastRestartReason: string;
+  temperature?: number;
 }

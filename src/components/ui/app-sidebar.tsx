@@ -11,6 +11,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Cat, CatIcon, Computer, LogOut, Network, Plug, Settings, User } from "lucide-react";
+import { logout } from "@/app/actions/auth";
 
 const menus = [
   {
@@ -105,16 +106,32 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {footerItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {footerItems.map((item) => {
+                if (item.title === "Logout") {
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild>
+                        <form action={logout}>
+                          <button className="flex w-full items-center gap-2">
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </button>
+                        </form>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                }
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <a href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
