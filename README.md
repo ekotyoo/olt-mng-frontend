@@ -1,72 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OLT Management System (Buroq.net)
 
-## Project Overview
+A comprehensive ISP Management System incorporating OLT Hardware Control, Radius Authentication, CRM, and Automated Billing.
 
-OLT management frontend built with Next.js App Router, React 19, Tailwind CSS 4, and Radix UI.
+## 🌟 Key Features
 
-### Scripts
+### 1. Network Management
+*   **OLT Synchronization**: Auto-discovers OLTs, PON Ports, and ONUs.
+*   **Traffic Analysis**: Real-time traffic monitoring for Uplink Interfaces.
+*   **Network Map**: Visual geographic distribution of customers and infrastructure.
+*   **NAS Management**: Manage Mikrotik/Cisco routers acting as Radius Clients.
 
-```bash
-npm run dev           # Start dev server (Turbopack)
-npm run build         # Build for production
-npm start             # Start production server
-npm run lint          # Run ESLint
-npm run format        # Format with Prettier
-npm run format:check  # Check formatting
+### 2. CRM & Billing
+*   **Customer Management**: Profiles, Plans, and Subscription tracking.
+*   **Automated Invoicing**: Generates invoices on the 1st of every month.
+*   **PDF Printing**: Professional A4 invoice generation.
+*   **Policy Enforcement**: Configurable "Max Unpaid Invoices" limit.
+
+### 3. Radius & Enforcement
+*   **PPPoE Authentication**: Radius-based authentication for subscribers.
+*   **Bandwidth Control**: Auto-syncs speed limits (`Mikrotik-Rate-Limit`) to routers.
+*   **Real-Time Disconnect (CoA)**: Instantly terminates sessions for suspended/delinquent users via RFC 3576.
+
+## 🛠️ Architecture
+
+*   **Framework**: Next.js 15 (App Router)
+*   **Database**: PostgreSQL + Prisma ORM
+*   **Styling**: Tailwind CSS + Shadcn UI
+*   **Radius Interaction**:
+    *   Database: `radcheck`, `radreply`, `radacct` (Freeradius Schema)
+    *   CoA: Native UDP Packet Sender (`src/lib/radius/coa.ts`)
+
+## 🚀 Setup & Configuration
+
+### 1. Environment Variables
+Create a `.env` file:
+```env
+DATABASE_URL="postgresql://user:pass@localhost:5432/olt_db"
+NEXT_PUBLIC_MAP_DEFAULT_LAT=-6.200000
+NEXT_PUBLIC_MAP_DEFAULT_LNG=106.816666
+CRON_SECRET=your_secret_token_here
 ```
 
-### Requirements
-
-- Node 18+ (recommended 20 LTS)
-- PNPM/Yarn/NPM as preferred package manager
-
-### Conventions
-
-- Path alias `@/*` maps to `src/*`
-- Code style is enforced with ESLint and Prettier
-- Editor settings enforced via `.editorconfig`
-
-### Structure
-
-- `src/app` App Router pages and layouts
-- `src/components` shared UI components
-- `src/lib` domain logic (e.g., telnet service, parsers)
-
-### Environment
-
-Create a `.env.local` for any secrets or endpoints you need at runtime.
-
-## Getting Started
-
-First, run the development server:
-
+### 2. Database
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx prisma db push
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. First Run
+1.  **Sync OLT**: Go to **Settings > OLTs** and add your OLT.
+2.  **Add Router (NAS)**: Go to **Settings > NAS** and add your Mikrotik IP and Secret.
+3.  **Configure Billing**: Go to **Settings > Global Billing** to set Due Day and Max Unpaid limits.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🤖 Automation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Daily Billing Job
+The system includes an automation endpoint at `/api/cron`.
+*   **Trigger**: Configure your server `crontab` to `curl` this URL once daily.
+*   **Actions**:
+    *   **1st of Month**: Generates new Invoices.
+    *   **Daily**: Checks for unpaid users > Limit.
+    *   **Action**: Suspends User + Sends CoA Disconnect Packet.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📂 Project Structure
+*   `src/app/actions`: Server Actions (Backend Logic)
+*   `src/lib/olt`: Telnet interactions with ZTE/Huawei OLTs.
+*   `src/lib/radius`: CoA and Session management.
+*   `src/components`: UI Components.
