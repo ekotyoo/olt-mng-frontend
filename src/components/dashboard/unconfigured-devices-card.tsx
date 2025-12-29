@@ -7,10 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, ArrowRight, Server, Wifi } from "lucide-react";
 import { DiscoveredDevice, scanAllUnconfiguredDevices } from "@/app/actions/discovery";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export default function UnconfiguredDevicesCard() {
     const [devices, setDevices] = useState<DiscoveredDevice[]>([]);
     const [loading, setLoading] = useState(true);
+    const [navigatingId, setNavigatingId] = useState<string | null>(null);
+    const router = useRouter();
 
     useEffect(() => {
         async function scan() {
@@ -32,8 +36,12 @@ export default function UnconfiguredDevicesCard() {
         return () => clearTimeout(timer);
     }, []);
 
-    if (loading) return null; // Don't show anything while loading to avoid layout shift, or show skeleton? 
-    // Better to show nothing initially, or a subtle loader. Let's return null to keep dashboard clean until we find something.
+    const handleConfigure = (oltId: string, serial: string) => {
+        setNavigatingId(serial);
+        router.push(`/onu-configuration?olt=${oltId}&serial=${serial}`);
+    };
+
+    if (loading) return null;
 
     if (devices.length === 0) return null;
 
@@ -68,11 +76,20 @@ export default function UnconfiguredDevicesCard() {
                                     </div>
                                 </div>
                             </div>
-                            <Button size="sm" variant="outline" asChild>
-                                {/* Deep link to config page, assuming it accepts params. We might need to handle this in the page. */}
-                                <Link href={`/onu-configuration?olt=${device.oltId}&serial=${device.serial}`}>
-                                    Configure
-                                </Link>
+                            <Button 
+                                size="sm" 
+                                variant="outline" 
+                                disabled={navigatingId === device.serial}
+                                onClick={() => handleConfigure(device.oltId, device.serial)}
+                            >
+                                {navigatingId === device.serial ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Loading...
+                                    </>
+                                ) : (
+                                    "Configure"
+                                )}
                             </Button>
                         </div>
                     ))}

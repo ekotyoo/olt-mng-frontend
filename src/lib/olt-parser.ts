@@ -1,5 +1,43 @@
 import { AttenuationInfo, OltCard, OltCardDetail, OltInfo, Onu, OnuDetails, PonPortOverview } from "./type";
 
+export function parsePortStatus(output: string): { interface: string, link: string }[] {
+    const lines = cleanOutput(output);
+    const results: { interface: string, link: string }[] = [];
+
+    // Header: Port hybrid Native Negotiation Speed Duplex Flow- Admin Link
+    // Row: gei_1/3/1 optical 1 enable auto full disable deactivate down
+
+    // Regex to capture the first column (Port) and the last column (Link) roughly
+    // We assume the first token is the Interface Name.
+    // The last token is Link Status.
+    // But interpretation might be tricky if columns assume different widths.
+    // However, given the screenshot, it's space-separated.
+
+    for (const line of lines) {
+        if (line.startsWith("Port") || line.startsWith("-")) continue;
+
+        const parts = line.split(/\s+/);
+        if (parts.length >= 9) {
+            const interfaceName = parts[0];
+            const linkStatus = parts[parts.length - 1]; // Last column
+
+            // Filter for typical uplink interfaces (gei, xgei, xe, smartgroup)
+            // We don't want gpon-olt or gpon-onu interfaces usually here?
+            // Actually 'show interface port-status' might show them.
+            // We only care about Uplinks for Traffic Analysis usually.
+            // Uplinks start with: gei, xgei, xe, smartgroup
+            if (/^(gei|xgei|xe|smartgroup)/i.test(interfaceName)) {
+                results.push({
+                    interface: interfaceName,
+                    link: linkStatus.toLowerCase()
+                });
+            }
+        }
+    }
+
+    return results;
+}
+
 /**
  * Remove header/footer lines from raw CLI output
  */
@@ -150,6 +188,17 @@ export function parseOnuState(output: string): PonPortOverview[] {
     const lines = cleanOutput(output);
     const parsedOnus = lines.map(parseOnuLine).filter(Boolean);
     return aggregateByPort(parsedOnus);
+}
+
+export function parseAllOnuStatuses(output: string): { slotPort: string, onuId: string, status: string }[] {
+    const lines = cleanOutput(output);
+    const parsedOnus = lines.map(parseOnuLine).filter((o): o is NonNullable<ReturnType<typeof parseOnuLine>> => !!o);
+
+    return parsedOnus.map(o => ({
+        slotPort: o.portId,
+        onuId: o.onuIndex.split(":")[1],
+        status: o.phaseState.toLowerCase()
+    }));
 }
 
 export function parseOnuDetails(config: string): OnuDetails[] {
@@ -457,19 +506,30 @@ export function parseVlanProfiles(output: string): string[] {
 export function parseVlans(output: string): { id: string, name: string }[] {
     const lines = cleanOutput(output);
     const vlans: { id: string, name: string }[] = [];
-    // Typical "show vlan" output:
-    // VLAN  Name  ...
-    // 100   Inet  ...
 
-    const regex = /^(\d+)\s+(\S+)/;
+    // "show vlan summary" output:
+    // All created vlan num: 3
+    // Details are following:
+    //   1,101,143
 
     for (const line of lines) {
-        const match = line.match(regex);
-        if (match) {
-            vlans.push({
-                id: match[1],
-                name: match[2]
-            });
+        if (line.toLowerCase().includes("created vlan num") || line.toLowerCase().includes("details are")) continue;
+
+        // Split by commas
+        const parts = line.split(",").map(s => s.trim()).filter(Boolean);
+        for (const part of parts) {
+            // Handle potential ranges "100-105" just in case, though screenshot is flat
+            if (/^\d+-\d+$/.test(part)) {
+                const [start, end] = part.split("-").map(Number);
+                if (!isNaN(start) && !isNaN(end)) {
+                    for (let i = start; i <= end; i++) {
+                        vlans.push({ id: i.toString(), name: `VLAN ${i}` });
+                    }
+                }
+            }
+            else if (/^\d+$/.test(part)) {
+                vlans.push({ id: part, name: `VLAN ${part}` });
+            }
         }
     }
     return vlans;
@@ -525,4 +585,70 @@ export function parseSystemLogs(output: string): SystemLog[] {
     }
 
     return logs.reverse(); // Newest first usually preferred
+}
+
+export function parseInterfaceStats(output: string) {
+    // Example ZTE Output variations:
+    // 1. Input rate                   :    0 bits/sec,      0 packets/sec
+    // 2. 20 seconds input rate :                  123 Bps,                2 pps
+
+    // Regex to match "input/output rate" followed by a number and unit (bits/sec or Bps)
+    // We ignore the prefix like "20 seconds" or "5 minutes" by unanchored match
+    const inputMatch = output.match(/input rate\s*:\s*(\d+)\s*(bits\/sec|Bps)/i);
+    const outputMatch = output.match(/output rate\s*:\s*(\d+)\s*(bits\/sec|Bps)/i);
+
+    let rx = 0; // bits per second
+    let tx = 0; // bits per second
+
+    if (inputMatch) {
+        const val = parseInt(inputMatch[1], 10);
+        const unit = inputMatch[2];
+        // If Bps (Bytes per second), convert to bits (x8)
+        // If bits/sec, keep as is.
+        rx = unit.toLowerCase() === 'bps' ? val * 8 : val;
+    }
+
+    if (outputMatch) {
+        const val = parseInt(outputMatch[1], 10);
+        const unit = outputMatch[2];
+        tx = unit.toLowerCase() === 'bps' ? val * 8 : val;
+    }
+
+    // Convert to Mbps (Million bits per sec)
+    return {
+        rx: parseFloat((rx / 1000000).toFixed(6)), // higher precision for low traffic
+        tx: parseFloat((tx / 1000000).toFixed(6)),
+        raw: { rx: inputMatch?.[0], tx: outputMatch?.[0] }
+    };
+}
+
+export function parseCardTemperature(output: string): { rack: string, shelf: string, slot: string, temperature: number }[] {
+    const lines = cleanOutput(output);
+    const temps: { rack: string, shelf: string, slot: string, temperature: number }[] = [];
+
+    // Parse table:
+    // Rack Shelf Slot Temperature ...
+    // 1    1     1    41          ...
+
+    const regex = /^(\d+)\s+(\d+)\s+(\d+)\s+(\S+)/;
+
+    for (const line of lines) {
+        const match = line.match(regex);
+        if (match) {
+            const tempStr = match[4];
+            // Handle "N/A." or "N/A"
+            if (tempStr.toUpperCase().includes("N/A")) continue;
+
+            const temp = parseInt(tempStr, 10);
+            if (!isNaN(temp)) {
+                temps.push({
+                    rack: match[1],
+                    shelf: match[2],
+                    slot: match[3],
+                    temperature: temp
+                });
+            }
+        }
+    }
+    return temps;
 }

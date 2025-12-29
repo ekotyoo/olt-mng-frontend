@@ -29,7 +29,7 @@ export default function OltUnifiedCard({ olt }: OltUnifiedCardProps) {
         <Link href={`/olt/${olt.id}`} className="block h-full">
             <Card className="hover:shadow-lg transition-all border-t-4 h-full" style={{ borderTopColor: olt.status === "ONLINE" ? "#22c55e" : "#ef4444" }}>
                 <CardHeader className="pb-2 border-b bg-muted/10">
-                    <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex flex-wrap justify-between items-center gap-4">
                         {/* Identity */}
                         <div className="flex items-center gap-3 w-full md:w-auto">
                             <div className={cn("w-3 h-3 rounded-full animate-pulse", olt.status === "ONLINE" ? "bg-green-500" : "bg-red-500")} />
@@ -95,7 +95,7 @@ function SyncButton({ oltId }: { oltId: string }) {
             setLoading(true);
             const res = await triggerSync(oltId);
             if (res.success) {
-                toast.success("OLT Synced Successfully");
+                toast.success(res.message || "Sync Queued");
             } else {
                 toast.error("Sync Failed: " + res.error);
             }

@@ -21,10 +21,8 @@ export default async function DynamicOltPage({ params }: { params: Promise<{ id:
                 <SyncButton lastSync={olt.updatedAt} oltId={olt.id} />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <OnuStatsCard oltId={id} />
-                <TrafficChart oltId={id} />
-            </div>
+            <OnuStatsCard oltId={id} />
+            <TrafficChart oltId={id} />
 
             <TrafficGraphCard oltId={id} />
         </div>

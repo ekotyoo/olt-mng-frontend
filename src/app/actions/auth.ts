@@ -75,7 +75,7 @@ export async function signup(prevState: FormState, formData: FormData) {
         }
     }
 
-    redirect('/')
+    redirect('/dashboard')
 }
 
 export async function login(prevState: FormState, formData: FormData) {
@@ -115,7 +115,7 @@ export async function login(prevState: FormState, formData: FormData) {
         }
     }
 
-    redirect('/')
+    redirect('/dashboard')
 }
 
 export async function logout() {

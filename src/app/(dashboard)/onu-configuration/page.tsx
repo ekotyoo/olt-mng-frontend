@@ -152,6 +152,7 @@ function OnuConfigurationContent() {
         onSelectOlt={(olt) => {
           setSelectedOlt(olt);
           getUncfgOnu(olt);
+          getAvailableProfiles(olt).then(setProfiles).catch(console.error);
         }}
         selectedOlt={selectedOlt} // Pass selectedOlt prop if SearchOnu supports it (need to check)
         selectedOnu={selectedOnu}

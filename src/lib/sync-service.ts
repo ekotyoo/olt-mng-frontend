@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { parseOnuDetails, parseOnuState, parseOltCard, parseOltCardDetail, parseSystemGroup } from "@/lib/olt-parser";
+import { parseOnuDetails, parseOnuState, parseOltCard, parseOltCardDetail, parseSystemGroup, parseInterfaceStats, parseAllOnuStatuses, parseCardTemperature, parsePortStatus } from "@/lib/olt-parser";
 import { runOltSession } from "@/lib/telnet-service";
 import { env } from "@/env";
 import { Olt } from "@prisma/client";
@@ -45,8 +45,30 @@ export async function syncFromOlt(oltId?: string) {
             // 2. Parse Data
             const detailedOnus = parseOnuDetails(runningConfig);
             const ponStates = parseOnuState(onusState);
+            const onuStatuses = parseAllOnuStatuses(onusState);
+
+            const statusMap = new Map<string, string>();
+            onuStatuses.forEach(s => {
+                statusMap.set(`${s.slotPort}:${s.onuId}`, s.status);
+            });
+
             const sysInfo = parseSystemGroup(systemGroup);
             const cards = parseOltCard(cardListRaw);
+
+            // 2.1 Parse Temperatures
+            let cardTemps: { rack: string, shelf: string, slot: string, temperature: number }[] = [];
+            try {
+                // We need to fetch it if we haven't yet (I missed adding the command in step 1, so I'll do it here if possible or just rely on separate call?)
+                // wait, I can't retroactively add the command to step 1 easily without replacing huge block.
+                // I will add the command execution right here since session is available.
+                const tempRaw = await session.sendCommand("show card-temperature");
+                cardTemps = parseCardTemperature(tempRaw);
+            } catch (e) {
+                console.warn("Failed to fetch temperatures", e);
+            }
+
+            const tempMap = new Map<string, number>();
+            cardTemps.forEach(t => tempMap.set(`${t.rack}-${t.shelf}-${t.slot}`, t.temperature));
 
             // Fetch detailed card stats
             let maxCpu = 0;
@@ -56,14 +78,21 @@ export async function syncFromOlt(oltId?: string) {
             const cardDetails: any[] = [];
             for (const card of cards) {
                 try {
+                    const cardTemp = tempMap.get(`${card.rack}-${card.shelf}-${card.slot}`) || 0;
+                    if (cardTemp > temp) temp = cardTemp;
+
                     if (card.status !== "Offline" && card.status !== "Type_Error") {
                         const detailRaw = await session.sendCommand(`show card rack ${card.rack} shelf ${card.shelf} slot ${card.slot}`);
                         const detail = parseOltCardDetail(detailRaw, card.rack, card.shelf, card.slot);
                         if (detail.cpuUsage > maxCpu) maxCpu = detail.cpuUsage;
                         if (detail.memoryUsage > maxMem) maxMem = detail.memoryUsage;
-                        // Assuming temp is available in 'detail' or we need to parse it differently. 
-                        // The original code only mocked 'temp = 0'.
-                        cardDetails.push({ ...detail, status: card.status, configType: card.realType });
+
+                        cardDetails.push({
+                            ...detail,
+                            status: card.status,
+                            configType: card.realType,
+                            temperature: cardTemp
+                        });
                     } else {
                         cardDetails.push({
                             rack: card.rack,
@@ -73,7 +102,7 @@ export async function syncFromOlt(oltId?: string) {
                             status: card.status,
                             cpuUsage: 0,
                             memoryUsage: 0,
-                            temperature: 0,
+                            temperature: cardTemp,
                             serialNumber: "",
                             upTime: "",
                             lastRestartReason: ""
@@ -83,6 +112,60 @@ export async function syncFromOlt(oltId?: string) {
                     console.log(`Failed to fetch card detail for ${card.rack}/${card.shelf}/${card.slot}`, e);
                 }
             }
+
+            // 2.1 Fetch Traffic Stats (Dynamic Discovery)
+            let trafficTargets: string[] = [];
+
+            try {
+                // Try dynamic discovery first
+                console.log("[Sync] Discovering interfaces via 'show interface port-status'...");
+                const portStatusRaw = await session.sendCommand("show interface port-status");
+                const detectedPorts = parsePortStatus(portStatusRaw);
+
+                // Filter for UP links only to save time? Or all?
+                // Let's take all UP links.
+                trafficTargets = detectedPorts
+                    .filter(p => p.link === "up")
+                    .map(p => p.interface);
+
+                console.log(`[Sync] Discovered ${trafficTargets.length} active uplink interfaces.`);
+            } catch (e) {
+                console.warn("[Sync] Dynamic interface discovery failed, using fallback.", e);
+            }
+
+            // Fallback if no targets found (e.g. command not supported or no UP links found? No, if no UP links we probably shouldn't guess)
+            // But if command failed, trafficTargets is empty.
+            if (trafficTargets.length === 0) {
+                console.log("[Sync] Falling back to heuristic scan of Slots 3 & 4.");
+                // Common ZTE C320/C300 Uplink Ports
+                // We scan Slot 3 and 4 (Main Control / Uplink Cards) for ports 1-4
+                [3, 4].forEach(slot => {
+                    [1, 2, 3, 4].forEach(port => {
+                        trafficTargets.push(`gei_1/${slot}/${port}`);
+                        trafficTargets.push(`xe_1/${slot}/${port}`);
+                    });
+                });
+            }
+
+            console.log(`[Sync] Probing ${trafficTargets.length} interfaces for traffic...`);
+
+            const trafficStats: { interface: string, rx: number, tx: number }[] = [];
+
+            for (const target of trafficTargets) {
+                try {
+                    const raw = await session.sendCommand(`show interface ${target}`);
+                    // Minimal validation to skip non-existent interfaces
+                    if (raw && !raw.includes("Error") && !raw.includes("Invalid") && raw.includes("Input rate")) {
+                        const stats = parseInterfaceStats(raw);
+                        console.log(`[Sync] Found ${target}: RX=${stats.rx} TX=${stats.tx}`);
+                        trafficStats.push({ interface: target, ...stats });
+                    }
+                } catch (ignore) {
+                    // Interface might not exist
+                }
+            }
+
+            console.log(`[Sync] Total valid traffic interfaces: ${trafficStats.length}`);
 
             // 3. Sync to DB
             return await prisma.$transaction(async (tx) => {
@@ -114,6 +197,19 @@ export async function syncFromOlt(oltId?: string) {
                         status: "ONLINE"
                     },
                 });
+
+                // A2. Save Traffic Stats
+                for (const stat of trafficStats) {
+                    await tx.trafficStat.create({
+                        data: {
+                            oltId: olt.id,
+                            interfaceName: stat.interface,
+                            rxMbps: stat.rx,
+                            txMbps: stat.tx,
+                            timestamp: new Date()
+                        }
+                    });
+                }
 
                 // B. Upsert PON Ports
                 for (const port of ponStates) {
@@ -202,6 +298,7 @@ export async function syncFromOlt(oltId?: string) {
                             pppoePass: onu.pppoePass || undefined,
                             tcontProfile: onu.tcontProfile || undefined,
                             lastSync: new Date(),
+                            status: statusMap.get(`${onu.slotPort}:${onu.onuId}`) || "offline",
                         },
                         update: {
                             slotPort: onu.slotPort,
@@ -213,6 +310,7 @@ export async function syncFromOlt(oltId?: string) {
                             pppoePass: onu.pppoePass || undefined,
                             tcontProfile: onu.tcontProfile || undefined,
                             lastSync: new Date(),
+                            status: statusMap.get(`${onu.slotPort}:${onu.onuId}`) || "offline",
                         }
                     });
                 }

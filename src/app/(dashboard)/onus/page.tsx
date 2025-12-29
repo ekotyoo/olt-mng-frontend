@@ -27,7 +27,7 @@ export default async function OnusPage({
     return (
         <div className="w-full space-y-4">
             <div className="flex flex-col gap-2">
-                <h1 className="text-2xl font-bold">All Optical Network Units (ONU)</h1>
+                <h1 className="text-2xl font-bold">Search Devices</h1>
                 <p className="text-muted-foreground text-sm">
                     Total {onuData.total} ONUs found
                 </p>

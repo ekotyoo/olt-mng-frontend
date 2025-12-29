@@ -1,5 +1,6 @@
 import { env } from "@/env";
 import { Telnet } from "telnet-client";
+import { prisma } from "@/lib/db";
 
 
 export type OltConnectionParams = {
@@ -49,7 +50,33 @@ export async function runOltSession<T>(
 
         await connection.send("terminal length 0", { shellPrompt: params.shellPrompt });
 
-        const sendCommand = async (command: string) => connection.send(command, { shellPrompt: params.shellPrompt });
+        const sendCommand = async (command: string) => {
+            try {
+                const output = await connection.send(command, { shellPrompt: params.shellPrompt });
+
+                // Log command asynchronously (don't block)
+                prisma.commandLog.create({
+                    data: {
+                        command: command,
+                        output: output,
+                        status: "SUCCESS",
+                        // In a real app we'd link to the specific OLT ID
+                    }
+                }).catch(err => console.error("Failed to log command", err));
+
+                return output;
+            } catch (error: any) {
+                // Log failure
+                prisma.commandLog.create({
+                    data: {
+                        command: command,
+                        output: error.message || "Unknown Error",
+                        status: "ERROR",
+                    }
+                }).catch(err => console.error("Failed to log command error", err));
+                throw error;
+            }
+        };
 
         return await action({ sendCommand });
     } catch (err) {

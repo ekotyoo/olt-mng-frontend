@@ -40,6 +40,7 @@ model Olt {
   ponPorts    PonPort[]
   slots       OltSlot[]
   trafficStats TrafficStat[]
+  commandLogs  CommandLog[]
   updatedAt   DateTime  @updatedAt
   createdAt   DateTime  @default(now())
 }
@@ -115,6 +116,9 @@ model Onu {
   lastSync      DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  signalHistory OnuSignalHistory[]
+  subscription  Subscription?
+
   @@unique([slotPort, onuId])
 }
 
@@ -130,4 +134,208 @@ model TrafficStat {
   timestamp     DateTime  @default(now())
 
   @@index([oltId, timestamp])
+}
+
+model SyncJob {
+  id            String    @id @default(cuid())
+  oltId         String?  // Optional, if null = global sync
+  status    String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  log       String?  // Error message or summary
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OnuSignalHistory {
+  id        String   @id @default(cuid())
+  onuId     String
+  onu       Onu      @relation(fields: [onuId], references: [id], onDelete: Cascade)
+  
+  rxPower   Float    // Downstream Rx (at ONU)
+  txPower   Float    // Upstream Rx (at OLT)
+  level     String   // "critical" (< -27), "warning" (< -25), "good"
+  
+  timestamp DateTime @default(now())
+  
+  @@index([onuId, timestamp])
+  @@index([level])
+}
+
+// --- CRM ---
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  portalPassword String? // Hashed password for portal access
+  status    String   @default("active") // active, disabled
+  
+  subscriptions Subscription[]
+  invoices      Invoice[]
+  createdAt     DateTime @default(now())
+}
+
+model ServicePlan {
+  id            String   @id @default(cuid())
+  name          String   // e.g. "Gold 50M"
+  price         Decimal
+  
+  // Technical details for Radius
+  uploadSpeed   Int      // Kbps
+  downloadSpeed Int      // Kbps
+  radiusGroup   String?  // Linked radgroupname
+  
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  planId      String
+  plan        ServicePlan @relation(fields: [planId], references: [id])
+  
+  // Link to Hardware
+  onuId       String? @unique
+  onu         Onu?    @relation(fields: [onuId], references: [id])
+  
+  // PPPoE Credentials
+  username    String   @unique
+  password    String
+  
+  // Location
+  installAddress String?
+  latitude       Float?
+  longitude      Float?
+
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  
+  month       DateTime // e.g. 2025-01-01
+  dueDate     DateTime? // Pay before this date (Optional for migration, but logic will enforce it)
+  amount      Decimal
+  status      String   @default("unpaid") // unpaid, paid, void
+  
+  payments    Payment[]
+  createdAt   DateTime @default(now())
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+  
+  amount      Decimal
+  method      String   // cash, transfer, gateway
+  reference   String?  // transaction ID
+  paidAt      DateTime @default(now())
+}
+
+// --- RADIUS (Standard Schema) ---
+model RadCheck {
+  id        Int    @id @default(autoincrement())
+  username  String
+  attribute String
+  op        String
+  value     String
+
+  @@map("radcheck")
+  @@index([username])
+}
+
+model RadReply {
+  id        Int    @id @default(autoincrement())
+  username  String
+  attribute String
+  op        String
+  value     String
+
+  @@map("radreply")
+  @@index([username])
+}
+
+model RadUserGroup {
+  username  String
+  groupname String
+  priority  Int    @default(1)
+
+  @@map("radusergroup")
+  @@id([username, groupname])
+}
+
+model RadGroupReply {
+  id        Int    @id @default(autoincrement())
+  groupname String
+  attribute String
+  op        String
+  value     String
+
+  @@map("radgroupreply")
+}
+
+model RadAcct {
+  radAcctId       BigInt   @id @default(autoincrement()) @map("radacctid")
+  acctSessionId   String   @map("acctsessionid")
+  acctUniqueId    String   @unique @map("acctuniqueid")
+  username        String   @map("username")
+  groupName       String?  @map("groupname")
+  realm           String?  @map("realm")
+  nasIpAddress    String   @map("nasipaddress")
+  nasPortId       String?  @map("nasportid")
+  nasPortType     String?  @map("nasporttype")
+  acctStartTime   DateTime? @map("acctstarttime")
+  acctUpdateTime  DateTime? @map("acctupdatetime")
+  acctStopTime    DateTime? @map("acctstoptime")
+  acctInterval    Int?     @map("acctinterval")
+  acctSessionTime Int?     @map("acctsessiontime")
+  acctAuthentic   String?  @map("acctauthentic")
+  connectInfo_start String? @map("connectinfo_start")
+  connectInfo_stop  String? @map("connectinfo_stop")
+  acctInputOctets   BigInt? @map("acctinputoctets")
+  acctOutputOctets  BigInt? @map("acctoutputoctets")
+  calledStationId   String? @map("calledstationid")
+  callingStationId  String? @map("callingstationid")
+  acctTerminateCause String? @map("acctterminatecause")
+  serviceType       String?  @map("servicetype")
+  framedProtocol    String?  @map("framedprotocol")
+  framedIpAddress   String?  @map("framedipaddress")
+
+  @@map("radacct")
+  @@index([username])
+  @@index([framedIpAddress])
+  @@index([acctStartTime])
+  @@index([acctStopTime])
+}
+
+model CommandLog {
+  id        String   @id @default(cuid())
+  oltId     String?
+  olt       Olt?     @relation(fields: [oltId], references: [id])
+  command   String
+  output    String?  @db.Text
+  status    String   // SUCCESS, ERROR
+  executedAt DateTime @default(now())
+}
+
+model SystemSetting {
+  key         String   @id
+  value       String   // stored as string, cast as needed
+  description String?
+}
+
+model Nas {
+  id          Int      @id @default(autoincrement())
+  nasname     String   @unique // IP Address
+  shortname   String?
+  type        String   @default("other") // mikrotik, cisco, other
+  secret      String
+  description String?
+  
+  @@map("nas")
 }

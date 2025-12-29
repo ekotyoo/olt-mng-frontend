@@ -58,6 +58,7 @@ export default function OnuConfigForm({
       vlanId: "",
       profile: "",
       cvlanProfile: "",
+      deviceType: "ZTE-F609"
     },
   });
 
@@ -73,6 +74,7 @@ export default function OnuConfigForm({
         vlanId: "",
         profile: "",
         cvlanProfile: "",
+        deviceType: "ZTE-F609",
       });
     }
   }, [onuDetail]);
@@ -119,6 +121,27 @@ export default function OnuConfigForm({
                     <FormLabel>Serial Number</FormLabel>
                     <FormControl>
                       <Input disabled placeholder="Serial Number" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="deviceType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Device Type</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Device Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["ZTE-F609", "ZTE-F660", "ZTE-F670", "ZTE-F601", "ZTE-F460"].map((type) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                   </FormItem>
                 )}
@@ -178,7 +201,22 @@ export default function OnuConfigForm({
                   <FormItem>
                     <FormLabel>VLAN ID</FormLabel>
                     <FormControl>
-                      <Input placeholder="VLAN ID" {...field} />
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select VLAN" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {activeVlans?.length ? (
+                              activeVlans.map((vlan) => (
+                                <SelectItem key={vlan.id} value={vlan.id}>
+                                  {vlan.id} - {vlan.name}
+                                </SelectItem>
+                              ))
+                          ) : (
+                              <SelectItem value="none" disabled>No VLANs found</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                   </FormItem>
                 )}

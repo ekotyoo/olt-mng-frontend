@@ -15,11 +15,7 @@ export default function GlobalSyncButton() {
             setLoading(true);
             const res = await triggerGlobalSync();
             if (res.success) {
-                if (res.failures && res.failures > 0) {
-                    toast.warning(`Synced ${res.count} OLTs with ${res.failures} errors.`);
-                } else {
-                    toast.success(`Synced all ${res.count} OLTs successfully`);
-                }
+                toast.success(res.message);
             } else {
                 toast.error("Global Sync Failed: " + res.error);
             }

@@ -10,55 +10,98 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Cat, CatIcon, Computer, LogOut, Network, Plug, Settings, User, ScrollText } from "lucide-react";
+import { Cat, CatIcon, Computer, LogOut, Network, Plug, Settings, User, ScrollText, Activity, Users, CreditCard, Receipt, Map } from "lucide-react";
 import { logout } from "@/app/actions/auth";
 
 const menus = [
   {
-    groupName: "Optical Line Terminal (OLT)",
+    groupName: "Network",
     items: [
-
       {
-        title: "PON Ports",
+        title: "Port Overview",
         url: "/pon-ports",
         icon: Network,
       },
       {
-        title: "OLT Settings",
+        title: "Network Map",
+        url: "/map",
+        icon: Map,
+      },
+      {
+        title: "OLT Devices",
         url: "/settings/olts",
         icon: Settings,
       }
     ],
   },
-
   {
-    groupName: "Optical Network Unit (ONU)",
+    groupName: "Device Management",
     items: [
       {
-        title: "Search ONUs",
+        title: "Search Devices",
         url: "/onus",
         icon: Network,
       },
       {
-        title: "ONU Configuration",
+        title: "Provision New",
         url: "/onu-configuration",
         icon: Plug,
+      },
+      {
+        title: "Signal Audit",
+        url: "/health",
+        icon: Activity,
       },
     ],
   },
   {
-    groupName: "System",
+    groupName: "Billing & Service",
     items: [
       {
-        title: "Users",
+        title: "Subscribers",
+        url: "/customers",
+        icon: Users,
+      },
+      {
+        title: "Internet Plans",
+        url: "/plans",
+        icon: ScrollText,
+      },
+      {
+        title: "Invoices",
+        url: "/invoices",
+        icon: Receipt,
+      },
+      {
+        title: "Active Sessions",
+        url: "/radius/sessions",
+        icon: Activity,
+      },
+    ],
+  },
+  {
+    groupName: "Administration",
+    items: [
+      {
+        title: "User Management",
         url: "/settings/users",
         icon: User,
       },
       {
-        title: "System Logs",
+        title: "Global Billing",
+        url: "/settings/billing",
+        icon: CreditCard,
+      },
+      {
+        title: "Audit Logs",
         url: "/logs",
         icon: ScrollText,
-      }
+      },
+      {
+        title: "NAS / Routers",
+        url: "/settings/nas",
+        icon: Network,
+      },
     ]
   }
 ];
@@ -66,7 +109,7 @@ const menus = [
 const footerItems = [
   {
     title: "Profile",
-    url: "#",
+    url: "/profile",
     icon: User,
   },
   {
@@ -83,7 +126,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="/">
+              <a href="/dashboard">
                 <div className="bg-sidebar-foreground text-sidebar-primary flex aspect-square size-8 items-center justify-center rounded-lg">
                   <Cat className="size-4" />
                 </div>

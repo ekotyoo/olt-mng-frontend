@@ -21,6 +21,7 @@ export type OnuConfig = {
   vlanId?: string;
   profile?: string;
   cvlanProfile?: string;
+  deviceType?: string;
 };
 
 export type PonPortOverview = {

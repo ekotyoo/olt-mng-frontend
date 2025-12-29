@@ -11,7 +11,7 @@ export default async function OltsPage() {
     return (
         <div className="flex flex-col gap-4">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold">OLT Management</h1>
+                <h1 className="text-2xl font-bold">OLT Devices</h1>
                 <Link href="/settings/olts/new">
                     <Button>
                         <Plus className="mr-2 h-4 w-4" />

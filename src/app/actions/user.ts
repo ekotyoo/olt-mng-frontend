@@ -1,89 +1,60 @@
-'use server'
+"use server";
 
-import { z } from 'zod';
-import { prisma } from '@/lib/db';
-import { hashPassword } from '@/lib/password';
-import { revalidatePath } from 'next/cache';
-
-const userSchema = z.object({
-    name: z.string().min(2).optional(),
-    email: z.string().email(),
-    role: z.enum(['ADMIN', 'VIEWER']),
-    status: z.enum(['ACTIVE', 'DISABLED']),
-    password: z.string().min(8).optional(), // Optional for updates
-});
+import { prisma } from "@/lib/db";
+import { hashPassword } from "@/lib/password";
+import { revalidatePath } from "next/cache";
 
 export async function getUsers() {
-    // Cast to any because Prisma types might be stale in the editor context
-    return await (prisma as any).user.findMany({
-        orderBy: { createdAt: 'desc' },
+    return await prisma.user.findMany({
+        orderBy: { createdAt: "desc" },
         select: {
             id: true,
             name: true,
             email: true,
             role: true,
             status: true,
-            createdAt: true,
+            createdAt: true
         }
     });
 }
 
-export async function createUser(data: z.infer<typeof userSchema> & { password: string }) {
-    // Validate
-    const result = userSchema.safeParse(data);
-    if (!result.success) {
-        return { error: 'Invalid data' };
+export async function createUser(data: any) {
+    // Validate email
+    const existing = await prisma.user.findUnique({
+        where: { email: data.email }
+    });
+
+    if (existing) {
+        throw new Error("Email already exists");
     }
 
-    // Check existing
-    const existing = await prisma.user.findUnique({ where: { email: data.email } });
-    if (existing) return { error: 'Email already exists' };
-
-    // Hash password
     const hashedPassword = await hashPassword(data.password);
 
-    await (prisma as any).user.create({
+    await prisma.user.create({
         data: {
             name: data.name,
             email: data.email,
             password: hashedPassword,
-            role: data.role,
-            status: data.status,
+            role: data.role || "VIEWER",
+            status: "ACTIVE"
         }
     });
 
-    revalidatePath('/settings/users');
+    revalidatePath("/settings/users");
     return { success: true };
 }
 
-export async function updateUser(id: string, data: Partial<z.infer<typeof userSchema>>) {
-    const updateData: any = { ...data };
-
-    // If password provided, hash it
-    if (data.password && data.password.trim() !== "") {
-        updateData.password = await hashPassword(data.password);
-    } else {
-        delete updateData.password;
+export async function deleteUser(userId: string) {
+    // Count users to prevent deleting the last one
+    const count = await prisma.user.count();
+    if (count <= 1) {
+        throw new Error("Cannot delete the last user");
     }
 
-    try {
-        await (prisma as any).user.update({
-            where: { id },
-            data: updateData
-        });
-        revalidatePath('/settings/users');
-        return { success: true };
-    } catch (e) {
-        return { error: 'Failed to update user' };
-    }
-}
+    await prisma.user.delete({
+        where: { id: userId }
+    });
 
-export async function deleteUser(id: string) {
-    try {
-        await (prisma as any).user.delete({ where: { id } });
-        revalidatePath('/settings/users');
-        return { success: true };
-    } catch (e) {
-        return { error: 'Failed to delete user' };
-    }
+    revalidatePath("/settings/users");
+    return { success: true };
 }

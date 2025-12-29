@@ -10,4 +10,5 @@ export const formSchema = z.object({
   vlanId: z.string(),
   profile: z.string(),
   cvlanProfile: z.string(),
+  deviceType: z.string(),
 });

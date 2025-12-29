@@ -63,3 +63,36 @@ export async function getGlobalDashboardStats(): Promise<DashboardStats> {
         olts: oltStats,
     };
 }
+
+export async function getBillingStats() {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    // 1. Revenue (This Month)
+    const paidInvoices = await prisma.invoice.aggregate({
+        where: {
+            status: "paid",
+            createdAt: { gte: startOfMonth }
+        },
+        _sum: { amount: true }
+    });
+
+    // 2. Unpaid Amount (Total)
+    const unpaidInvoices = await prisma.invoice.aggregate({
+        where: { status: "unpaid" },
+        _sum: { amount: true },
+        _count: true
+    });
+
+    // 3. Active Subs
+    const activeSubs = await prisma.subscription.count({
+        where: { status: "active" }
+    });
+
+    return {
+        revenue: paidInvoices._sum.amount?.toNumber() || 0,
+        unpaidAmount: unpaidInvoices._sum.amount?.toNumber() || 0,
+        unpaidCount: unpaidInvoices._count,
+        activeSubs
+    };
+}

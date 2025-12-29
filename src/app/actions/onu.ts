@@ -163,7 +163,7 @@ export async function configureOnuAction(config: OnuConfig) {
         await session.sendCommand("conf t");
         await session.sendCommand(`interface gpon-olt_${config.slotPort}`);
         // Assuming default type 'ZTE-F609' if not provided, or generic
-        const type = "ZTE-F609";
+        const type = config.deviceType || "ZTE-F609";
         await session.sendCommand(`onu ${config.onuId} type ${type} sn ${config.serialNumber}`);
         await session.sendCommand("exit");
 
@@ -246,7 +246,7 @@ export async function getAvailableProfiles(oltId?: string) {
             result.vlan = parseVlanProfiles(vlanRaw);
 
             // Fetch Active VLANs
-            const vlansRaw = await session.sendCommand("show vlan");
+            const vlansRaw = await session.sendCommand("show vlan summary");
             result.activeVlans = parseVlans(vlansRaw);
 
         }, params);

@@ -41,7 +41,7 @@ export default function SearchOnu({
   return (
     <Card className="w-full flex flex-col gap-4">
       <CardHeader>
-        <CardTitle>Scan ONU</CardTitle>
+        <CardTitle>Provision New</CardTitle>
       </CardHeader>
 
       <CardContent>

@@ -81,6 +81,7 @@ export async function getOltCardStats(oltId?: string) {
         softwareVersion: "-", // Not stored
         cpuUsage: s.cpuUsage,
         memoryUsage: s.memoryUsage,
+        temperature: s.temperature,
         upTime: s.upTime || "-",
         lastRestartReason: s.lastRestartReason || "-"
     }));
@@ -94,4 +95,30 @@ export async function getOltOptions() {
         label: `${o.name} (${o.host})`,
         value: o.id
     }));
+}
+
+export async function getTrafficHistory(oltId: string) {
+    if (!oltId) return { interfaces: [], data: [] };
+
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const stats = await prisma.trafficStat.findMany({
+        where: {
+            oltId,
+            timestamp: { gte: twentyFourHoursAgo }
+        },
+        orderBy: { timestamp: 'asc' }
+    });
+
+    const interfaces = Array.from(new Set(stats.map(s => s.interfaceName)));
+
+    // Serialize Dates
+    const safeData = stats.map(s => ({
+        ...s,
+        rxMbps: s.rxMbps,
+        txMbps: s.txMbps,
+        timestamp: s.timestamp.toISOString() // Pass as string to client
+    }));
+
+    return { interfaces, data: safeData };
 }
