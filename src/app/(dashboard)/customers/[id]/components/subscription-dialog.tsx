@@ -2,32 +2,32 @@
 
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { createSubscription } from "@/app/actions/billing";
+import { getAvailableOnus } from "@/app/actions/onu";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import dynamic from "next/dynamic";
 
 type Plan = {
     id: string;
     name: string;
-    price: any;
+    price: number;
 };
 
-import dynamic from "next/dynamic";
-
-const LocationPicker = dynamic(() => import("@/components/map/location-picker"), { 
+const LocationPicker = dynamic(() => import("@/components/map/location-picker"), {
     ssr: false,
     loading: () => <div className="h-[200px] w-full bg-slate-100 animate-pulse rounded-md" />
 });
@@ -36,13 +36,25 @@ export default function SubscriptionDialog({ customerId, plans }: { customerId: 
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [coords, setCoords] = useState<{ lat: number, lng: number }>({ lat: 0, lng: 0 });
+    const [availableOnus, setAvailableOnus] = useState<{ id: string, serial: string, name: string, slotPort: string, onuId: number }[]>([]);
     const router = useRouter();
+
+    async function loadOnus() {
+        try {
+            const onus = await getAvailableOnus();
+            setAvailableOnus(onus);
+        } catch (e) {
+            console.error(e);
+            toast.error("Failed to load ONUs");
+        }
+    }
 
     async function handleSubmit(formData: FormData) {
         setLoading(true);
         const data = {
             customerId,
             planId: formData.get("planId") as string,
+            onuId: formData.get("onuId") === "none" ? undefined : formData.get("onuId") as string,
             username: formData.get("username") as string,
             password: formData.get("password") as string,
             latitude: formData.get("latitude") ? Number(formData.get("latitude")) : undefined,
@@ -63,7 +75,10 @@ export default function SubscriptionDialog({ customerId, plans }: { customerId: 
     }
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(val) => {
+            setOpen(val);
+            if (val) loadOnus();
+        }}>
             <DialogTrigger asChild>
                 <Button size="sm">
                     <Plus className="w-4 h-4 mr-2" />
@@ -98,6 +113,28 @@ export default function SubscriptionDialog({ customerId, plans }: { customerId: 
                                 </Select>
                             </div>
                         </div>
+
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="onu" className="text-right">
+                                Link ONU
+                            </Label>
+                            <div className="col-span-3">
+                                <Select name="onuId">
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select ONU Device (Optional)" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">_ No Device Linked _</SelectItem>
+                                        {availableOnus.map(o => (
+                                            <SelectItem key={o.id} value={o.id}>
+                                                SN: {o.serial} ({o.slotPort}:{o.onuId})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="username" className="text-right">
                                 PPPoE User
@@ -116,24 +153,24 @@ export default function SubscriptionDialog({ customerId, plans }: { customerId: 
                             </Label>
                             <div className="col-span-3 space-y-2">
                                 <div className="flex gap-2">
-                                    <Input 
-                                        name="latitude" 
-                                        placeholder="Lat" 
-                                        type="number" 
-                                        step="any" 
-                                        value={coords.lat} 
-                                        onChange={e => setCoords({...coords, lat: Number(e.target.value)})}
+                                    <Input
+                                        name="latitude"
+                                        placeholder="Lat"
+                                        type="number"
+                                        step="any"
+                                        value={coords.lat}
+                                        onChange={e => setCoords({ ...coords, lat: Number(e.target.value) })}
                                     />
-                                    <Input 
-                                        name="longitude" 
-                                        placeholder="Long" 
-                                        type="number" 
-                                        step="any" 
+                                    <Input
+                                        name="longitude"
+                                        placeholder="Long"
+                                        type="number"
+                                        step="any"
                                         value={coords.lng}
-                                        onChange={e => setCoords({...coords, lng: Number(e.target.value)})}
+                                        onChange={e => setCoords({ ...coords, lng: Number(e.target.value) })}
                                     />
                                 </div>
-                                <LocationPicker 
+                                <LocationPicker
                                     value={coords.lat ? { lat: coords.lat, lng: coords.lng } : undefined}
                                     onChange={(lat, lng) => setCoords({ lat, lng })}
                                 />

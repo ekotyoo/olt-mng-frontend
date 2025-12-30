@@ -21,6 +21,7 @@ export type OnuConfig = {
   vlanId?: string;
   profile?: string;
   cvlanProfile?: string;
+  vlanProfile?: string; // e.g. "netmedia"
   deviceType?: string;
 };
 

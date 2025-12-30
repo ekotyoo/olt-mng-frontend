@@ -1,0 +1,86 @@
+server default {
+    listen {
+        type = auth
+        ipaddr = *
+        port = 0
+        limit {
+            max_connections = 16
+            lifetime = 0
+            idle_timeout = 30
+        }
+    }
+    listen {
+        type = acct
+        ipaddr = *
+        port = 0
+        limit {
+            max_pps = 0
+        }
+    }
+
+    authorize {
+        filter_username
+        preprocess
+        chap
+        mschap
+        digest
+        suffix
+        eap {
+            ok = return
+        }
+        files
+        sql
+        expiration
+        logintime
+        pap
+    }
+
+    authenticate {
+        Auth-Type PAP {
+            pap
+        }
+        Auth-Type CHAP {
+            chap
+        }
+        Auth-Type MS-CHAP {
+            mschap
+        }
+        digest
+        eap
+    }
+
+    preacct {
+        preprocess
+        acct_unique
+        suffix
+        files
+    }
+
+    accounting {
+        detail
+        unix
+        sql
+        exec
+        attr_filter.accounting_response
+    }
+
+    session {
+        sql
+    }
+
+    post-auth {
+        update {
+            &reply: += &session-state:
+        }
+        sql
+        exec
+        remove_reply_message_if_eap
+    }
+
+    pre-proxy {
+    }
+
+    post-proxy {
+        eap
+    }
+}

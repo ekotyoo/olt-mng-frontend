@@ -279,6 +279,26 @@ model RadGroupReply {
   @@map("radgroupreply")
 }
 
+model RadGroupCheck {
+  id        Int    @id @default(autoincrement())
+  groupname String
+  attribute String
+  op        String
+  value     String
+
+  @@map("radgroupcheck")
+}
+
+model RadPostAuth {
+  id       Int      @id @default(autoincrement())
+  username String
+  pass     String? // Password used (optional/hashed)
+  reply    String? // Access-Accept/Reject
+  authdate DateTime @default(now())
+
+  @@map("radpostauth")
+}
+
 model RadAcct {
   radAcctId       BigInt   @id @default(autoincrement()) @map("radacctid")
   acctSessionId   String   @map("acctsessionid")

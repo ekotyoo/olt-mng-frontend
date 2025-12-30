@@ -39,7 +39,7 @@ export default function OnuConfigForm({
   const PROFILES = ["default", "iptv-up", "5M", "10M", "15M", "20M", "50M", "100M"]; // Fallback if empty
   const CVLAN_PROFILES = ["netmedia143"]; // Fallback
 
-  const availableTcont = tcontProfiles?.length ? tcontProfiles : PROFILES;
+  const availableTcont = Array.from(new Set([...(tcontProfiles || []), ...PROFILES]));
   const availableVlanProc = vlanProfiles?.length ? vlanProfiles : CVLAN_PROFILES;
 
   // Combine custom input + active vlans for Combobox later?
@@ -56,14 +56,16 @@ export default function OnuConfigForm({
       pppoeUsername: "",
       pppoePassword: "",
       vlanId: "",
-      profile: "",
-      cvlanProfile: "",
-      deviceType: "ZTE-F609"
+      profile: "default",
+      vlanProfile: "netmedia143",
+      deviceType: "ZTE"
     },
   });
 
   useEffect(() => {
     if (onuDetail) {
+      const initialType = onuDetail.serial.toUpperCase().startsWith("ZTE") ? "ZTE" : "ALL";
+
       form.reset({
         onuId: String(onuDetail.onu_id),
         slotPort: onuDetail.slot_port,
@@ -72,9 +74,9 @@ export default function OnuConfigForm({
         pppoeUsername: "",
         pppoePassword: "",
         vlanId: "",
-        profile: "",
-        cvlanProfile: "",
-        deviceType: "ZTE-F609",
+        profile: "default",
+        vlanProfile: "netmedia143", // Default
+        deviceType: initialType,
       });
     }
   }, [onuDetail]);
@@ -137,8 +139,31 @@ export default function OnuConfigForm({
                           <SelectValue placeholder="Select Device Type" />
                         </SelectTrigger>
                         <SelectContent>
-                          {["ZTE-F609", "ZTE-F660", "ZTE-F670", "ZTE-F601", "ZTE-F460"].map((type) => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          <SelectItem value="ZTE">ZTE</SelectItem>
+                          <SelectItem value="ALL">ALL</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="vlanProfile"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>VLAN Profile (WAN)</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select VLAN Profile" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="netmedia143">netmedia143</SelectItem>
+                          {/* Fallback for others if needed */}
+                          {availableVlanProc.filter(p => p !== "netmedia143").map(p => (
+                            <SelectItem key={p} value={p}>{p}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -146,6 +171,7 @@ export default function OnuConfigForm({
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="onuId"
@@ -207,13 +233,13 @@ export default function OnuConfigForm({
                         </SelectTrigger>
                         <SelectContent>
                           {activeVlans?.length ? (
-                              activeVlans.map((vlan) => (
-                                <SelectItem key={vlan.id} value={vlan.id}>
-                                  {vlan.id} - {vlan.name}
-                                </SelectItem>
-                              ))
+                            activeVlans.map((vlan) => (
+                              <SelectItem key={vlan.id} value={vlan.id}>
+                                {vlan.id} - {vlan.name}
+                              </SelectItem>
+                            ))
                           ) : (
-                              <SelectItem value="none" disabled>No VLANs found</SelectItem>
+                            <SelectItem value="none" disabled>No VLANs found</SelectItem>
                           )}
                         </SelectContent>
                       </Select>
@@ -236,29 +262,6 @@ export default function OnuConfigForm({
                           {availableTcont.map((profile) => (
                             <SelectItem key={profile} value={profile}>
                               {profile.toUpperCase()}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="cvlanProfile"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>VLAN Profile</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select CVLAN Profile" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableVlanProc.map((cvlan) => (
-                            <SelectItem key={cvlan} value={cvlan}>
-                              {cvlan}
                             </SelectItem>
                           ))}
                         </SelectContent>

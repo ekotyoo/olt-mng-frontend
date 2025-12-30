@@ -9,6 +9,7 @@ export const formSchema = z.object({
   pppoePassword: z.string(),
   vlanId: z.string(),
   profile: z.string(),
-  cvlanProfile: z.string(),
-  deviceType: z.string(),
+  cvlanProfile: z.string().optional(),
+  vlanProfile: z.string().optional(),
+  deviceType: z.string().optional(),
 });

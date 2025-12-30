@@ -157,35 +157,70 @@ export async function configureOnuAction(config: OnuConfig) {
     if (!config.slotPort || !config.onuId || !config.serialNumber) throw new Error("Missing config fields");
 
     const params = await getOltConnectionParams(config.olt);
+    console.log("OLT Connection Params:", { params });
 
     return await runOltSession(async (session) => {
         // 1. Register ONU
+        // conf t
+        // interface gpon-olt_1/1/3
+        // onu 50 type ZTE sn ZICG276DBE73
+        // exit
         await session.sendCommand("conf t");
         await session.sendCommand(`interface gpon-olt_${config.slotPort}`);
-        // Assuming default type 'ZTE-F609' if not provided, or generic
-        const type = config.deviceType || "ZTE-F609";
+
+        // User requested type to be 'ZTE' or 'ALL'
+        const type = config.deviceType || "ZTE";
         await session.sendCommand(`onu ${config.onuId} type ${type} sn ${config.serialNumber}`);
         await session.sendCommand("exit");
 
         // 2. Configure Interface
+        // interface gpon-onu_1/1/3:50
+        // tcont 1 profile 20M
+        // gemport 1 tcont 1
+        // service-port 1 vport 1 user-vlan 143 vlan 143
+        // exit
         await session.sendCommand(`interface gpon-onu_${config.slotPort}:${config.onuId}`);
-        if (config.customerOnuName) await session.sendCommand(`name ${config.customerOnuName}`);
-        if (config.profile) await session.sendCommand(`tcont 1 profile ${config.profile}`);
-        await session.sendCommand(`gemport 1 name ${config.customerOnuName || 'internet'} tcont 1`);
-        await session.sendCommand(`gemport 1 traffic-limit upstream default downstream default`);
-        await session.sendCommand("switchport mode hybrid vport 1"); // Example
-        await session.sendCommand("exit");
 
-        // 3. Configure Service (pon-onu-mng)
-        await session.sendCommand(`pon-onu-mng gpon-onu_${config.slotPort}:${config.onuId}`);
-        // Logic forWAN IP / PPPoE would go here
-        if (config.vlanId) {
-            await session.sendCommand(`service 1 gemport 1 vlan ${config.vlanId}`);
+        const tcontProfile = config.profile || "default"; // Fallback if missing
+        await session.sendCommand(`tcont 1 profile ${tcontProfile}`);
+        await session.sendCommand(`gemport 1 tcont 1`);
+
+        const vlan = config.vlanId || "100"; // Fallback
+        // service-port 1 vport 1 user-vlan 143 vlan 143
+        await session.sendCommand(`service-port 1 vport 1 user-vlan ${vlan} vlan ${vlan}`);
+
+        if (config.customerOnuName) {
+            await session.sendCommand(`name ${config.customerOnuName}`);
         }
         await session.sendCommand("exit");
 
+        // 3. Configure Service (WAN / PPPoE)
+        // pon-onu-mng gpon-onu_1/1/3:16
+        // service 1 gemport 1 vlan 143
+        // wan-ip 1 mode pppoe username 13*Boncel password 212 vlan-profile netmedia 143 host 1
+        // exit
+        await session.sendCommand(`pon-onu-mng gpon-onu_${config.slotPort}:${config.onuId}`);
+        await session.sendCommand(`service 1 gemport 1 vlan ${vlan}`);
+
+        if (config.pppoeUsername && config.pppoePassword) {
+            const vlanProfile = config.vlanProfile || "netmedia";
+            // wan-ip 1 mode pppoe username ... password ... vlan-profile netmedia 143 host 1
+            const cmd = `wan-ip 1 mode pppoe username ${config.pppoeUsername} password ${config.pppoePassword} vlan-profile ${vlanProfile} host 1`;
+            const response = await session.sendCommand(cmd);
+
+            if (response.includes("%") || response.toLowerCase().includes("error")) {
+                throw new Error(`OLT Invalid Command (WAN IP): ${response}`);
+            }
+        }
+
+        await session.sendCommand("exit");
+
+        // 4. Save
+        await session.sendCommand("exit"); // Exit config mode
+        await session.sendCommand("write"); // Save config
+
         return "success";
-    });
+    }, params);
 }
 
 export async function getNextOnuId(oltId: string, slotPort: string): Promise<string> {
@@ -322,4 +357,23 @@ export async function rebootOnuAction(onuId: string, slotPort: string, serial: s
 
         return "success";
     }, params);
+}
+
+export async function getAvailableOnus() {
+    const onus = await prisma.onu.findMany({
+        where: {
+            subscription: null
+        },
+        orderBy: {
+            serial: 'asc'
+        }
+    });
+
+    return onus.map(o => ({
+        id: o.id,
+        serial: o.serial,
+        name: o.name || "Unnamed",
+        slotPort: o.slotPort,
+        onuId: o.onuId
+    }));
 }

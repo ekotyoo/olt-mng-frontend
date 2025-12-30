@@ -10,13 +10,18 @@ import InvoiceGenerator from "./components/invoice-generator";
 import MarkPaidButton from "./components/mark-paid-button";
 import DeleteSubscriptionButton from "./components/delete-subscription-button";
 import PortalAccessCard from "./components/portal-access-card";
+import OnuStatusBadge from "./components/onu-status-badge";
 
-export default async function CustomerDetailsPage({ params }: { params: { id: string } }) {
+export default async function CustomerDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     const customer = await prisma.customer.findUnique({
-        where: { id: params.id },
+        where: { id },
         include: {
             subscriptions: {
-                include: { plan: true }
+                include: {
+                    plan: true,
+                    onu: true
+                }
             },
             invoices: {
                 orderBy: { createdAt: 'desc' },
@@ -100,16 +105,30 @@ export default async function CustomerDetailsPage({ params }: { params: { id: st
                             <TableBody>
                                 {customer.subscriptions.map(sub => (
                                     <TableRow key={sub.id}>
-                                        <TableCell className="font-medium">{sub.plan.name}</TableCell>
-                                        <TableCell className="text-xs text-muted-foreground">
-                                            {Math.round(sub.plan.downloadSpeed/1024)}M / {Math.round(sub.plan.uploadSpeed/1024)}M
+                                        <TableCell className="font-medium">
+                                            <div>{sub.plan.name}</div>
+                                            {sub.onu && (
+                                                <div className="pt-1">
+                                                    <OnuStatusBadge
+                                                        slotPort={sub.onu.slotPort}
+                                                        onuId={sub.onu.onuId.toString()}
+                                                        serial={sub.onu.serial}
+                                                    />
+                                                </div>
+                                            )}
                                         </TableCell>
-                                        <TableCell className="font-mono text-sm">{sub.username}</TableCell>
+                                        <TableCell className="text-xs text-muted-foreground">
+                                            {Math.round(sub.plan.downloadSpeed / 1024)}M / {Math.round(sub.plan.uploadSpeed / 1024)}M
+                                        </TableCell>
+                                        <TableCell className="font-mono text-sm">
+                                            {sub.username}
+                                            {sub.onu && <div className="text-xs text-muted-foreground pt-1">SN: {sub.onu.serial}</div>}
+                                        </TableCell>
                                         <TableCell>
                                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(sub.plan.price))}
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline">{sub.status}</Badge>
+                                            <Badge variant={sub.status === 'active' ? 'default' : 'destructive'}>{sub.status}</Badge>
                                         </TableCell>
                                         <TableCell>
                                             <DeleteSubscriptionButton subscriptionId={sub.id} />
@@ -118,11 +137,11 @@ export default async function CustomerDetailsPage({ params }: { params: { id: st
                                 ))}
                                 {customer.subscriptions.length === 0 && (
                                     <TableRow>
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
-                                            No active subscriptions.
-                                        </TableCell>
-                                    </TableRow>
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                                                No active subscriptions.
+                                            </TableCell>
+                                        </TableRow>
                                     </TableRow>
                                 )}
                             </TableBody>
@@ -131,7 +150,7 @@ export default async function CustomerDetailsPage({ params }: { params: { id: st
                 </Card>
             </div>
 
-                {/* Invoices */}
+            {/* Invoices */}
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
@@ -141,7 +160,7 @@ export default async function CustomerDetailsPage({ params }: { params: { id: st
                     <InvoiceGenerator customerId={customer.id} />
                 </CardHeader>
                 <CardContent>
-                   <Table>
+                    <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Date</TableHead>
@@ -176,9 +195,9 @@ export default async function CustomerDetailsPage({ params }: { params: { id: st
                                         {inv.status !== "paid" && (
                                             <MarkPaidButton invoiceId={inv.id} amount={Number(inv.amount)} />
                                         )}
-                                        <a 
-                                            href={`/invoices/${inv.id}/print`} 
-                                            target="_blank" 
+                                        <a
+                                            href={`/invoices/${inv.id}/print`}
+                                            target="_blank"
                                             className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8 ml-2"
                                             title="Print Invoice"
                                         >
@@ -195,7 +214,7 @@ export default async function CustomerDetailsPage({ params }: { params: { id: st
                                 </TableRow>
                             )}
                         </TableBody>
-                   </Table>
+                    </Table>
                 </CardContent>
             </Card>
         </div>
