@@ -1,7 +1,7 @@
 export async function register() {
     if (process.env.NEXT_RUNTIME === 'nodejs') {
         const { syncFromOlt } = await import('@/lib/sync-service');
-        const POLL_INTERVAL = 60_000; // 5 minutes
+        const POLL_INTERVAL = 30_000; // 30 seconds - balanced for near real-time with low OLT load
 
         console.log(`[Instrumentation] Registering OLT Background Sync (Every ${POLL_INTERVAL / 1000}s)`);
 

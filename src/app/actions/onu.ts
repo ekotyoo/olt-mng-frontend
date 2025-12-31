@@ -221,6 +221,71 @@ export async function configureOnuAction(config: OnuConfig) {
 
         return "success";
     }, params);
+
+    // 5. Optimistic Database Update
+    // Update DB immediately for instant UI feedback
+    // Background sync (every 60s) will validate and correct any drift
+    try {
+        const oltInfo = await prisma.olt.findFirst({
+            where: config.olt ? { id: config.olt } : { host: params?.host }
+        });
+
+        if (oltInfo) {
+            const ponPort = await prisma.ponPort.findUnique({
+                where: {
+                    oltId_portIndex: {
+                        oltId: oltInfo.id,
+                        portIndex: config.slotPort!
+                    }
+                }
+            });
+
+            if (ponPort) {
+                const onuIdInt = parseInt(config.onuId!, 10);
+
+                await prisma.onu.upsert({
+                    where: { serial: config.serialNumber! },
+                    create: {
+                        serial: config.serialNumber!,
+                        slotPort: config.slotPort!,
+                        onuId: onuIdInt,
+                        ponPortId: ponPort.id,
+                        name: config.customerOnuName || undefined,
+                        deviceType: config.deviceType || "ZTE",
+                        vlan: config.vlanId || undefined,
+                        pppoeUser: config.pppoeUsername || undefined,
+                        pppoePass: config.pppoePassword || undefined,
+                        tcontProfile: config.profile || undefined,
+                        status: "Working", // Optimistic status
+                        lastSync: new Date()
+                    },
+                    update: {
+                        slotPort: config.slotPort!,
+                        onuId: onuIdInt,
+                        ponPortId: ponPort.id,
+                        name: config.customerOnuName || undefined,
+                        deviceType: config.deviceType || "ZTE",
+                        vlan: config.vlanId || undefined,
+                        pppoeUser: config.pppoeUsername || undefined,
+                        pppoePass: config.pppoePassword || undefined,
+                        tcontProfile: config.profile || undefined,
+                        status: "Working", // Update status optimistically
+                        lastSync: new Date()
+                    }
+                });
+
+                console.log(`[Optimistic Update] ONU ${config.serialNumber} updated in DB`);
+                revalidatePath("/onus");
+                revalidatePath("/onu-configuration");
+            }
+        }
+    } catch (dbError) {
+        // Don't fail the operation if DB update fails
+        // Background sync will catch it
+        console.error("[Optimistic Update] Failed to update DB, background sync will correct:", dbError);
+    }
+
+    return "success";
 }
 
 export async function getNextOnuId(oltId: string, slotPort: string): Promise<string> {
@@ -316,6 +381,7 @@ export async function deleteOnuAction(onuId: string, slotPort: string, serial: s
         await session.sendCommand(`interface gpon-olt_${slotPort}`);
         await session.sendCommand(`no onu ${onuId}`);
         await session.sendCommand("exit");
+        await session.sendCommand("write"); // Persist deletion to OLT config
 
         // Also delete from database
         await prisma.onu.delete({
